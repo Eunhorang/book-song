@@ -1,0 +1,77 @@
+#!/usr/bin/env python3
+"""웹사이트 구조·데이터·공개 범위·미디어 연결을 검사한다."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import subprocess
+from pathlib import Path
+
+ROOT=Path(__file__).resolve().parents[1]
+REQUIRED=["index.html","styles.css","app.js","site.webmanifest","data/tracks.json","data/media.json","fonts/PretendardVariable.woff2","fonts/LICENSE.txt","assets/og-card.png","icons/icon-192.png","icons/icon-512.png","icons/apple-touch-icon.png"]
+PROCESS_WORDS=re.compile(r"Suno|생성형|프롬프트|옵시디언|Obsidian|workflow|draft",re.I)
+SECRET_WORDS=re.compile(r"(?:api[_-]?key|access[_-]?token|client[_-]?secret|password)\s*[:=]",re.I)
+EMAIL=re.compile(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}")
+PHONE=re.compile(r"(?<!\d)01[016789][-. ]?\d{3,4}[-. ]?\d{4}(?!\d)")
+
+
+def main() -> None:
+    parser=argparse.ArgumentParser()
+    parser.add_argument("--dist",type=Path,default=ROOT/"dist")
+    args=parser.parse_args()
+    base=args.dist.resolve()
+    errors=[]
+    for relative in REQUIRED:
+        if not (base/relative).is_file():
+            errors.append(f"필수 파일 누락: {relative}")
+    if errors:
+        raise SystemExit("\n".join(errors))
+    tracks=json.loads((base/"data/tracks.json").read_text(encoding="utf-8"))
+    media=json.loads((base/"data/media.json").read_text(encoding="utf-8"))
+    expected=[f"{number:02d}" for number in range(1,len(tracks)+1)]
+    ids=[track.get("id") for track in tracks]
+    if ids != expected:
+        errors.append(f"곡 번호 불연속: {ids}")
+    for track in tracks:
+        for key in ["title","book","author","question","message","hook","lyrics","meanings","narration","endingQuestion","theme"]:
+            if not track.get(key):
+                errors.append(f"{track.get('id')} 필드 누락: {key}")
+        if len(track.get("meanings",[]))<3:
+            errors.append(f"{track.get('id')} 의미 해석이 너무 적습니다.")
+        entry=media.get(track["id"])
+        if entry is None:
+            errors.append(f"{track['id']} 미디어 항목 누락")
+            continue
+        if entry.get("mp4") and not (base/entry["mp4"]).is_file():
+            errors.append(f"{track['id']} MP4 연결 오류")
+        youtube=entry.get("youtube","")
+        if youtube and not re.fullmatch(r"https://www\.youtube\.com/watch\?v=[A-Za-z0-9_-]{11}",youtube):
+            errors.append(f"{track['id']} YouTube 주소 오류")
+    html=(base/"index.html").read_text(encoding="utf-8")
+    for marker in ['lang="ko"','id="main-content"','class="skip-link"','id="track-search"','id="main-player"','aria-live="polite"']:
+        if marker not in html:
+            errors.append(f"HTML 접근성 표식 누락: {marker}")
+    text_files=[p for p in base.rglob("*") if p.is_file() and p.suffix.lower() in {".html",".css",".js",".json",".webmanifest",".svg",".txt"}]
+    public_text="\n".join(p.read_text(encoding="utf-8",errors="ignore") for p in text_files)
+    checks=[
+        (re.compile(r"/Users/|[A-Za-z]:\\\\Users\\\\"),"로컬 경로"),
+        (EMAIL,"이메일"),(PHONE,"전화번호"),(SECRET_WORDS,"비밀정보 표식"),(PROCESS_WORDS,"내부 제작 과정 문구"),
+        (re.compile(r"학생.{0,12}(?:이름|학번|연락처)|학부모.{0,12}연락처|학교폭력.{0,12}(?:사안|사건)\s*번호"),"학교 민감정보"),
+    ]
+    for pattern,label in checks:
+        matches=pattern.findall(public_text)
+        if matches:
+            errors.append(f"{label} 발견: {len(matches)}건")
+    result=subprocess.run(["node","--check",str(base/"app.js")],capture_output=True,text=True)
+    if result.returncode:
+        errors.append("app.js 문법 오류: "+result.stderr.strip())
+    if errors:
+        print(json.dumps({"result":"FAIL","errors":errors},ensure_ascii=False,indent=2))
+        raise SystemExit(1)
+    print(json.dumps({"result":"PASS","tracks":len(tracks),"mp4":sum(bool(v.get('mp4')) for v in media.values()),"youtube":sum(bool(v.get('youtube')) for v in media.values()),"publicProcessWordingHits":0,"privacyHits":0},ensure_ascii=False,indent=2))
+
+
+if __name__ == "__main__":
+    main()

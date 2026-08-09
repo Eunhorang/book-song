@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f3ec">
+  <meta name="color-scheme" content="light">
+  <meta name="author" content="이정주">
+  <meta name="description" content="책이 남긴 질문을 노래와 가사 해석으로 만나는 이정주의 음악 아카이브">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; media-src 'self'; connect-src 'self'; frame-src https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:title" content="책이 노래가 될 때">
+  <meta property="og:description" content="책을 요약하지 않습니다. 한 권이 남긴 질문을 노래합니다.">
+  <meta property="og:url" content="https://eunhorang.github.io/book-song/">
+  <meta property="og:image" content="https://eunhorang.github.io/book-song/assets/og-card.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://eunhorang.github.io/book-song/">
+  <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <link rel="manifest" href="./site.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+  <title>책이 노래가 될 때</title>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="#top" aria-label="책이 노래가 될 때 처음으로">
+        <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true">
+          <path d="M8 12.5c6.4-2.5 11.8-1.4 16 2.2v22.8c-4.2-3.6-9.6-4.7-16-2.2V12.5Z"/>
+          <path d="M40 12.5c-6.4-2.5-11.8-1.4-16 2.2v22.8c4.2-3.6 9.6-4.7 16-2.2V12.5Z"/>
+          <path class="brand-wave" d="M13 23c2.1-4.1 4.2 4.1 6.3 0s4.2 4.1 6.3 0 4.2 4.1 6.3 0 4.2 4.1 6.3 0"/>
+        </svg>
+        <span>
+          <strong>책이 노래가 될 때</strong>
+          <small>이정주의 사유음악실</small>
+        </span>
+      </a>
+      <nav class="site-nav" aria-label="주요 메뉴">
+        <a href="#library">음악 보관함</a>
+        <a href="#interpretation">가사와 의미</a>
+        <a href="#about">프로젝트 소개</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="hero-inner">
+        <div class="hero-copy">
+          <p class="eyebrow">BOOKS INTO SONGS</p>
+          <h1 id="hero-title">한 권의 질문이 한 곡의 노래가 됩니다.</h1>
+          <p class="hero-lead">책을 요약하지 않습니다. 읽고 멈춰 서게 된 질문을 생활의 언어로 쓰고, 오래 곁에 둘 수 있는 노래로 기록합니다.</p>
+          <div class="hero-actions">
+            <button class="button button-primary" id="hero-listen" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z"/></svg>
+              첫 번째 노래 만나기
+            </button>
+            <a class="button button-secondary" href="#library">전체 노래 보기</a>
+          </div>
+          <dl class="hero-stats" aria-label="아카이브 현황">
+            <div><dt id="song-count">0</dt><dd>노래</dd></div>
+            <div><dt id="book-count">0</dt><dd>책</dd></div>
+            <div><dt>가사·해석</dt><dd>한곳에</dd></div>
+          </dl>
+        </div>
+
+        <div class="hero-art" aria-label="펼친 책 위로 노래가 흐르는 상징 그림" role="img">
+          <div class="orbit orbit-one"></div>
+          <div class="orbit orbit-two"></div>
+          <div class="record">
+            <span class="record-ring ring-one"></span>
+            <span class="record-ring ring-two"></span>
+            <span class="record-label">
+              <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M9 13c6-2.2 11-1 15 2v21c-4-3-9-4.2-15-2V13Zm30 0c-6-2.2-11-1-15 2v21c4-3 9-4.2 15-2V13Z"/></svg>
+            </span>
+          </div>
+          <div class="sound-lines" aria-hidden="true">
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          </div>
+          <p class="hero-note">읽기에서 시작해<br>노래로 오래 남기는 기록</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="now-playing section-shell" id="listen" aria-labelledby="player-heading">
+      <div class="section-heading compact">
+        <div>
+          <p class="eyebrow">NOW SELECTED</p>
+          <h2 id="player-heading">선택한 노래</h2>
+        </div>
+        <p id="selection-status" class="selection-status" aria-live="polite">노래 목록을 불러오는 중입니다.</p>
+      </div>
+
+      <div class="player-card" id="player-card">
+        <div class="cover" id="track-cover" aria-hidden="true">
+          <span class="cover-number" id="cover-number">01</span>
+          <span class="cover-line"></span>
+          <div class="cover-wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <strong id="cover-title">책이 노래가 될 때</strong>
+          <small id="cover-book">한 권의 질문, 한 곡의 노래</small>
+        </div>
+
+        <div class="player-content">
+          <div class="track-kicker">
+            <span class="status-pill" id="player-status">준비 중</span>
+            <span id="player-number">TRACK 01</span>
+          </div>
+          <h3 id="player-title">노래를 불러오는 중입니다</h3>
+          <p class="book-line" id="player-book"></p>
+          <p class="track-message" id="player-message"></p>
+
+          <div class="source-switch" id="source-switch" aria-label="재생 방법" hidden></div>
+
+          <div class="media-stage" id="media-stage">
+            <video id="main-player" controls playsinline preload="metadata" hidden>
+              이 브라우저에서는 영상 재생을 지원하지 않습니다.
+            </video>
+            <div class="youtube-stage" id="youtube-stage" hidden></div>
+            <div class="media-empty" id="media-empty">
+              <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M18 11v23.5a6 6 0 1 1-3-5.2V16l22-5v19.5a6 6 0 1 1-3-5.2V6L18 11Z"/></svg>
+              <div>
+                <strong>음원을 준비하고 있습니다</strong>
+                <p>MP4 또는 영상 주소가 연결되면 이 자리에서 바로 재생할 수 있습니다.</p>
+              </div>
+            </div>
+          </div>
+
+          <blockquote class="hook-quote" id="player-hook"></blockquote>
+        </div>
+      </div>
+    </section>
+
+    <section class="library section-shell" id="library" aria-labelledby="library-heading">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">MUSIC LIBRARY</p>
+          <h2 id="library-heading">음악 보관함</h2>
+          <p>제목, 책 또는 질문으로 노래를 찾고 선택해 보세요.</p>
+        </div>
+        <p class="result-count" id="result-count" aria-live="polite"></p>
+      </div>
+
+      <div class="library-tools" role="search">
+        <label class="search-field" for="track-search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.4-4.4m2.4-5.1a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"/></svg>
+          <span class="visually-hidden">노래 검색</span>
+          <input id="track-search" type="search" placeholder="노래, 책, 저자, 질문 검색" autocomplete="off">
+        </label>
+        <label class="filter-field" for="status-filter">
+          <span>재생 상태</span>
+          <select id="status-filter">
+            <option value="all">전체 노래</option>
+            <option value="available">재생 가능</option>
+            <option value="mp4">보관 음원</option>
+            <option value="youtube">YouTube</option>
+            <option value="pending">준비 중</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="track-grid" id="track-grid"></div>
+      <div class="no-results" id="no-results" hidden>
+        <strong>찾는 노래가 없습니다.</strong>
+        <p>검색어를 줄이거나 재생 상태를 ‘전체 노래’로 바꿔 보세요.</p>
+      </div>
+    </section>
+
+    <section class="interpretation section-shell" id="interpretation" aria-labelledby="interpretation-heading">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">LYRICS &amp; MEANING</p>
+          <h2 id="interpretation-heading">가사와 의미</h2>
+          <p>한 곡의 생활 장면이 책의 질문과 어떻게 이어지는지 살펴봅니다.</p>
+        </div>
+      </div>
+
+      <div class="detail-card">
+        <div class="detail-header">
+          <div>
+            <span id="detail-number">05번째 노래</span>
+            <h3 id="detail-title">노래 제목</h3>
+          </div>
+          <p id="detail-source"></p>
+        </div>
+
+        <div class="tabs" role="tablist" aria-label="노래 상세 내용">
+          <button id="tab-lyrics" role="tab" aria-selected="true" aria-controls="panel-lyrics" tabindex="0">전체 가사</button>
+          <button id="tab-meaning" role="tab" aria-selected="false" aria-controls="panel-meaning" tabindex="-1">가사의 의미</button>
+          <button id="tab-notes" role="tab" aria-selected="false" aria-controls="panel-notes" tabindex="-1">질문과 기록</button>
+        </div>
+
+        <div class="tab-panel" id="panel-lyrics" role="tabpanel" aria-labelledby="tab-lyrics">
+          <pre class="lyrics-text" id="lyrics-text"></pre>
+        </div>
+        <div class="tab-panel" id="panel-meaning" role="tabpanel" aria-labelledby="tab-meaning" hidden>
+          <div class="meaning-grid" id="meaning-grid"></div>
+        </div>
+        <div class="tab-panel" id="panel-notes" role="tabpanel" aria-labelledby="tab-notes" hidden>
+          <div class="notes-grid">
+            <article><span>출발 질문</span><p id="detail-question"></p></article>
+            <article><span>노래가 전하는 말</span><p id="detail-message"></p></article>
+            <article><span>영상 시작 내레이션</span><p id="detail-narration"></p></article>
+            <article><span>마지막에 남기는 질문</span><p id="detail-ending"></p></article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="about section-shell" id="about" aria-labelledby="about-heading">
+      <div class="about-card">
+        <div class="about-copy">
+          <p class="eyebrow">ABOUT THE PROJECT</p>
+          <h2 id="about-heading">책을 덮은 뒤에도 질문이 곁에 남도록</h2>
+          <p>〈책이 노래가 될 때〉는 한 권의 내용을 대신 정리하는 곳이 아닙니다. 책과 대화하며 건져 올린 하나의 질문을 쉬운 가사와 노래로 다시 만나게 하는 음악 아카이브입니다.</p>
+          <blockquote>“책을 요약하지 않습니다. 한 권이 남긴 질문을 노래합니다.”</blockquote>
+        </div>
+        <ol class="project-steps">
+          <li><span>01</span><div><strong>읽고</strong><p>마음에 오래 남은 대목을 찾습니다.</p></div></li>
+          <li><span>02</span><div><strong>묻고</strong><p>오늘의 삶과 이어지는 질문을 고릅니다.</p></div></li>
+          <li><span>03</span><div><strong>노래하고</strong><p>첫 번에 이해되는 생활의 언어로 씁니다.</p></div></li>
+          <li><span>04</span><div><strong>다시 듣습니다</strong><p>가사와 그 의미를 함께 기록합니다.</p></div></li>
+        </ol>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div>
+      <strong>책이 노래가 될 때</strong>
+      <p>책에서 건진 질문을 노래로 기록하는 이정주의 사유음악실</p>
+    </div>
+    <p>책의 문장을 옮긴 공식 음원이나 전체 요약물이 아닌 독립 창작 프로젝트입니다.</p>
+  </footer>
+
+  <noscript>이 웹사이트에서 노래 목록을 살펴보려면 JavaScript를 켜 주세요.</noscript>
+  <script src="./app.js" defer></script>
+</body>
+</html>

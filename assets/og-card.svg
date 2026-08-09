@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7f3ec"/>
+      <stop offset="1" stop-color="#eadbc9"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#432516" flood-opacity=".18"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1040" cy="86" r="230" fill="none" stroke="#b85c38" stroke-opacity=".11" stroke-width="54"/>
+  <circle cx="102" cy="610" r="190" fill="none" stroke="#397569" stroke-opacity=".09" stroke-width="45"/>
+  <g transform="translate(750 92)" filter="url(#shadow)">
+    <circle cx="215" cy="215" r="205" fill="#dbc0a5"/>
+    <circle cx="215" cy="215" r="132" fill="#211d1a"/>
+    <circle cx="215" cy="215" r="54" fill="#b85c38"/>
+    <circle cx="215" cy="215" r="13" fill="#f6d9ca"/>
+    <circle cx="215" cy="215" r="95" fill="none" stroke="#fff" stroke-opacity=".12"/>
+    <circle cx="215" cy="215" r="116" fill="none" stroke="#fff" stroke-opacity=".09"/>
+  </g>
+  <g transform="translate(88 88)">
+    <text x="0" y="32" fill="#793921" font-family="Apple SD Gothic Neo" font-size="24" font-weight="700" letter-spacing="5">BOOKS INTO SONGS</text>
+    <text x="0" y="145" fill="#25221e" font-family="Apple SD Gothic Neo" font-size="74" font-weight="700">책이 노래가 될 때</text>
+    <text x="0" y="215" fill="#686158" font-family="Apple SD Gothic Neo" font-size="34" font-weight="500">한 권의 질문이 한 곡의 노래가 됩니다.</text>
+    <path d="M0 287h95" stroke="#b85c38" stroke-width="5" stroke-linecap="round"/>
+    <text x="0" y="356" fill="#423c35" font-family="Apple SD Gothic Neo" font-size="27">책을 요약하지 않습니다.</text>
+    <text x="0" y="400" fill="#423c35" font-family="Apple SD Gothic Neo" font-size="27">한 권이 남긴 질문을 노래합니다.</text>
+    <text x="0" y="498" fill="#793921" font-family="Apple SD Gothic Neo" font-size="23" font-weight="700">이정주의 사유음악실</text>
+  </g>
+</svg>
