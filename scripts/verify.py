@@ -62,6 +62,9 @@ def main() -> None:
     for marker in ['<span class="hero-title-line">읽고 남은 마음을</span>','<span class="hero-title-line">노래로 기록합니다.</span>']:
         if marker not in html:
             errors.append(f"첫 화면 대표 문구 누락: {marker}")
+    copyright_notice='© 2026 이정주. 감상 링크 공유는 가능하며, 가사·해설·사이트 구성의 무단 복제·재배포·상업적 이용은 허용되지 않습니다.'
+    if html.count(copyright_notice) != 1 or 'class="footer-copyright"' not in html:
+        errors.append("푸터 저작권 문구 누락 또는 중복")
     if "한 권의 질문이 한 곡의 노래가 됩니다." in html:
         errors.append("교체 요청된 이전 대표 문구가 남아 있습니다.")
     for legacy_anchor in ['href="#library"','href="#interpretation"','href="#about"']:

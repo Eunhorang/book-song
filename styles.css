@@ -1360,8 +1360,19 @@ svg {
   margin: 5px 0 0;
 }
 
-.site-footer > p {
+.footer-notes {
+  max-width: 640px;
   text-align: right;
+}
+
+.footer-notes p {
+  max-width: none;
+}
+
+.site-footer .footer-copyright {
+  margin-top: 10px;
+  color: var(--ink);
+  line-height: 1.65;
 }
 
 noscript {
@@ -1803,7 +1814,7 @@ noscript {
     padding-bottom: calc(32px + env(safe-area-inset-bottom));
   }
 
-  .site-footer > p {
+  .footer-notes {
     text-align: left;
   }
 }
