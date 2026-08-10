@@ -155,7 +155,15 @@ def main() -> None:
     media={}
     if MEDIA_PATH.exists():
         media=json.loads(MEDIA_PATH.read_text(encoding="utf-8"))
-    media={track_id: media.get(track_id,{"mp4":"","youtube":""}) for track_id in ids}
+    normalized_media={}
+    for track_id in ids:
+        entry=media.get(track_id,{})
+        normalized_media[track_id]={
+            "audio":entry.get("audio",entry.get("mp4","")),
+            "video":entry.get("video",""),
+            "youtube":entry.get("youtube",""),
+        }
+    media=normalized_media
     MEDIA_PATH.write_text(json.dumps(media,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     print(f"동기화 완료: {len(tracks)}곡 → {TRACKS_PATH.relative_to(ROOT)}")
 

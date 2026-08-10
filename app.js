@@ -38,7 +38,9 @@
     playerMessage: document.querySelector("#player-message"),
     playerHook: document.querySelector("#player-hook"),
     sourceSwitch: document.querySelector("#source-switch"),
+    mediaStage: document.querySelector("#media-stage"),
     mainPlayer: document.querySelector("#main-player"),
+    videoPlayer: document.querySelector("#video-player"),
     youtubeStage: document.querySelector("#youtube-stage"),
     mediaEmpty: document.querySelector("#media-empty"),
     shuffleButton: document.querySelector("#shuffle-button"),
@@ -156,20 +158,28 @@
   const mediaFor = (trackId) => {
     const item = state.media[trackId] || {};
     return {
-      mp4: typeof item.mp4 === "string" ? item.mp4.trim() : "",
+      audio: typeof item.audio === "string" ? item.audio.trim() : typeof item.mp4 === "string" ? item.mp4.trim() : "",
+      video: typeof item.video === "string" ? item.video.trim() : "",
       youtube: typeof item.youtube === "string" ? item.youtube.trim() : "",
     };
   };
 
   const mediaStatus = (trackId) => {
     const media = mediaFor(trackId);
-    if (media.mp4 && media.youtube) return { key: "both", label: "음원·영상" };
-    if (media.mp4) return { key: "mp4", label: "보관 음원" };
-    if (media.youtube) return { key: "youtube", label: "YouTube" };
+    const hasVideo = Boolean(media.video || media.youtube);
+    if (media.audio && hasVideo) return { key: "both", label: "음원·영상" };
+    if (media.audio) return { key: "audio", label: "보관 음원" };
+    if (hasVideo) return { key: "video", label: "영상" };
     return { key: "pending", label: "준비 중" };
   };
 
-  const mp4Tracks = () => state.tracks.filter((track) => Boolean(mediaFor(track.id).mp4));
+  const audioTracks = () => state.tracks.filter((track) => Boolean(mediaFor(track.id).audio));
+
+  const activeLocalPlayer = () => {
+    if (state.mediaMode === "audio") return elements.mainPlayer;
+    if (state.mediaMode === "video") return elements.videoPlayer;
+    return null;
+  };
 
   const playlistIsActive = () =>
     Boolean(state.playlistMode) &&
@@ -209,25 +219,22 @@
 
   const updatePlaybackToggle = () => {
     const track = selectedTrack();
-    const controllable =
-      track &&
-      state.mediaMode === "mp4" &&
-      !elements.mainPlayer.hidden &&
-      Boolean(elements.mainPlayer.getAttribute("src"));
+    const player = activeLocalPlayer();
+    const controllable = track && player && !player.hidden && Boolean(player.getAttribute("src"));
     if (!controllable) {
       setPlaybackToggle("unavailable", "재생 제어", "재생할 수 있는 보관 음원이 선택되지 않았습니다", true);
       return;
     }
     const title = `〈${track.title}〉`;
-    if (!elements.mainPlayer.paused && !elements.mainPlayer.ended) {
+    if (!player.paused && !player.ended) {
       setPlaybackToggle("pause", "일시정지", `${title} 일시정지`);
       return;
     }
-    if (elements.mainPlayer.ended) {
+    if (player.ended) {
       setPlaybackToggle("replay", "다시 재생", `${title} 처음부터 다시 재생`);
       return;
     }
-    if (elements.mainPlayer.currentTime > 0) {
+    if (player.currentTime > 0) {
       setPlaybackToggle("resume", "이어 재생", `${title} 이어서 재생`);
       return;
     }
@@ -235,7 +242,7 @@
   };
 
   const updatePlaylistControls = (message = "") => {
-    const available = mp4Tracks();
+    const available = audioTracks();
     const disabled = available.length === 0;
     elements.shuffleButton.disabled = disabled;
     elements.shuffleButton.setAttribute("aria-pressed", state.playlistMode === "shuffle" ? "true" : "false");
@@ -262,8 +269,9 @@
       setHeaderPlaybackStatus(`음원 준비 중 · ${title}`, "pending", `${title} 음원을 준비하고 있습니다.`);
       return;
     }
-    if (state.mediaMode === "mp4" && !elements.mainPlayer.hidden) {
-      if (!elements.mainPlayer.paused && !elements.mainPlayer.ended) {
+    const localPlayer = activeLocalPlayer();
+    if (localPlayer && !localPlayer.hidden) {
+      if (!localPlayer.paused && !localPlayer.ended) {
         setHeaderPlaybackStatus(
           `재생 중 · ${title}`,
           "playing",
@@ -271,11 +279,11 @@
         );
         return;
       }
-      if (elements.mainPlayer.ended) {
+      if (localPlayer.ended) {
         setHeaderPlaybackStatus(`재생 완료 · ${title}`, "complete", `${title} 재생이 끝났습니다.`);
         return;
       }
-      if (elements.mainPlayer.currentTime > 0) {
+      if (localPlayer.currentTime > 0) {
         setHeaderPlaybackStatus(`일시정지 · ${title}`, "paused", `${title} 재생이 일시정지되었습니다.`);
         return;
       }
@@ -315,13 +323,15 @@
   };
 
   const matchesFilter = (track) => {
-    const status = mediaStatus(track.id).key;
+    const media = mediaFor(track.id);
+    const available = Boolean(media.audio || media.video || media.youtube);
     const statusMatch =
       state.filter === "all" ||
-      (state.filter === "available" && status !== "pending") ||
-      (state.filter === "mp4" && ["mp4", "both"].includes(status)) ||
-      (state.filter === "youtube" && ["youtube", "both"].includes(status)) ||
-      (state.filter === "pending" && status === "pending");
+      (state.filter === "available" && available) ||
+      (state.filter === "audio" && Boolean(media.audio)) ||
+      (state.filter === "video" && Boolean(media.video)) ||
+      (state.filter === "youtube" && Boolean(media.youtube)) ||
+      (state.filter === "pending" && !available);
     if (!statusMatch) return false;
     if (!state.query) return true;
     const searchable = [track.title, track.book, track.author, track.question, track.message]
@@ -384,14 +394,20 @@
     elements.playerCard.style.setProperty("--track-ink", track.theme.ink);
   };
 
+  const resetPlayer = (player) => {
+    player.pause();
+    player.removeAttribute("src");
+    player.load();
+    player.hidden = true;
+  };
+
   const resetMedia = () => {
-    elements.mainPlayer.pause();
-    elements.mainPlayer.removeAttribute("src");
-    elements.mainPlayer.load();
-    elements.mainPlayer.hidden = true;
+    resetPlayer(elements.mainPlayer);
+    resetPlayer(elements.videoPlayer);
     elements.youtubeStage.replaceChildren();
     elements.youtubeStage.hidden = true;
     elements.mediaEmpty.hidden = true;
+    elements.mediaStage.dataset.mediaKind = "empty";
   };
 
   const showEmptyMedia = (message) => {
@@ -399,19 +415,32 @@
     const strong = elements.mediaEmpty.querySelector("strong");
     const paragraph = elements.mediaEmpty.querySelector("p");
     strong.textContent = message || "음원을 준비하고 있습니다";
-    paragraph.textContent = "MP4 또는 영상 주소가 연결되면 이 자리에서 바로 재생할 수 있습니다.";
+    paragraph.textContent = "MP3 또는 MP4 음원이 연결되면 영상 없이 음악만 재생됩니다.";
     elements.mediaEmpty.hidden = false;
   };
 
-  const renderMp4 = (path) => {
+  const renderAudio = (path) => {
     resetMedia();
-    if (!/^media\/[0-9]{2}(?:-[^/]+)?\.mp4$/i.test(path)) {
+    if (!/^media\/[0-9]{2}(?:-[^/]+)?\.(?:mp3|mp4)$/i.test(path)) {
       showEmptyMedia("음원 연결을 확인해 주세요");
       return;
     }
     elements.mainPlayer.src = `./${path}`;
     elements.mainPlayer.hidden = false;
+    elements.mediaStage.dataset.mediaKind = "audio";
     elements.mainPlayer.load();
+  };
+
+  const renderVideo = (path) => {
+    resetMedia();
+    if (!/^media\/[0-9]{2}(?:-[^/]+)?\.mp4$/i.test(path)) {
+      showEmptyMedia("영상 연결을 확인해 주세요");
+      return;
+    }
+    elements.videoPlayer.src = `./${path}`;
+    elements.videoPlayer.hidden = false;
+    elements.mediaStage.dataset.mediaKind = "video";
+    elements.videoPlayer.load();
   };
 
   const renderYoutube = (url, track) => {
@@ -430,14 +459,19 @@
     iframe.allowFullscreen = true;
     elements.youtubeStage.append(iframe);
     elements.youtubeStage.hidden = false;
+    elements.mediaStage.dataset.mediaKind = "youtube";
   };
 
   const renderMediaMode = () => {
     const track = selectedTrack();
     if (!track) return;
     const media = mediaFor(track.id);
-    if (state.mediaMode === "mp4" && media.mp4) {
-      renderMp4(media.mp4);
+    if (state.mediaMode === "audio" && media.audio) {
+      renderAudio(media.audio);
+      return;
+    }
+    if (state.mediaMode === "video" && media.video) {
+      renderVideo(media.video);
       return;
     }
     if (state.mediaMode === "youtube" && media.youtube) {
@@ -450,10 +484,11 @@
   const renderSourceSwitch = (track) => {
     const media = mediaFor(track.id);
     const options = [];
-    if (media.mp4) options.push({ key: "mp4", label: "보관 음원" });
+    if (media.audio) options.push({ key: "audio", label: "음악만 듣기" });
+    if (media.video) options.push({ key: "video", label: "영상 보기" });
     if (media.youtube) options.push({ key: "youtube", label: "YouTube" });
     elements.sourceSwitch.replaceChildren();
-    elements.sourceSwitch.hidden = options.length === 0;
+    elements.sourceSwitch.hidden = options.length <= 1;
     if (!options.some((option) => option.key === state.mediaMode)) {
       state.mediaMode = options[0]?.key || null;
     }
@@ -463,12 +498,11 @@
       button.textContent = option.label;
       button.setAttribute("aria-pressed", option.key === state.mediaMode ? "true" : "false");
       button.addEventListener("click", () => {
-        if (playlistIsActive() && option.key !== "mp4") {
-          clearPlaylist("YouTube 재생을 선택하여 연속 재생을 종료했습니다.");
+        if (playlistIsActive() && option.key !== "audio") {
+          clearPlaylist("영상 재생을 선택하여 랜덤 재생을 종료했습니다.");
         }
         state.mediaMode = option.key;
         renderSourceSwitch(track);
-        renderMediaMode();
         updatePlaylistControls();
       });
       elements.sourceSwitch.append(button);
@@ -538,7 +572,7 @@
     if (!playlistIsActive()) return;
     const trackId = state.playlistQueue[state.playlistIndex];
     selectTrack(trackId, { updateUrl: true, preservePlaylist: true });
-    if (state.mediaMode !== "mp4" || elements.mainPlayer.hidden) {
+    if (state.mediaMode !== "audio" || elements.mainPlayer.hidden) {
       window.setTimeout(advancePlaylist, 0);
       return;
     }
@@ -546,7 +580,7 @@
     const playback = elements.mainPlayer.play();
     if (playback && typeof playback.catch === "function") {
       playback.catch(() => {
-        updatePlaylistControls("자동 재생이 차단되었습니다. 영상의 재생 버튼을 누르면 연속 재생이 이어집니다.");
+        updatePlaylistControls("자동 재생이 차단되었습니다. 음악 플레이어의 재생 버튼을 누르면 랜덤 재생이 이어집니다.");
       });
     }
   };
@@ -563,7 +597,7 @@
   };
 
   const startPlaylist = (mode) => {
-    const ids = mp4Tracks().map((track) => track.id);
+    const ids = audioTracks().map((track) => track.id);
     if (ids.length === 0) {
       clearPlaylist("연속 재생할 보관 음원이 아직 없습니다.");
       return;
@@ -617,32 +651,36 @@
     });
     elements.shuffleButton.addEventListener("click", () => startPlaylist("shuffle"));
     elements.playbackToggleButton.addEventListener("click", () => {
-      if (elements.playbackToggleButton.disabled || state.mediaMode !== "mp4" || elements.mainPlayer.hidden) return;
-      if (!elements.mainPlayer.paused && !elements.mainPlayer.ended) {
-        elements.mainPlayer.pause();
+      const player = activeLocalPlayer();
+      if (elements.playbackToggleButton.disabled || !player || player.hidden) return;
+      if (!player.paused && !player.ended) {
+        player.pause();
         return;
       }
-      if (elements.mainPlayer.ended) elements.mainPlayer.currentTime = 0;
-      const playback = elements.mainPlayer.play();
+      if (player.ended) player.currentTime = 0;
+      const playback = player.play();
       if (playback && typeof playback.catch === "function") {
-        playback.catch(() => updatePlaylistControls("재생을 시작하지 못했습니다. 영상의 재생 버튼을 눌러 주세요."));
+        playback.catch(() => updatePlaylistControls("재생을 시작하지 못했습니다. 플레이어의 재생 버튼을 눌러 주세요."));
       }
     });
-    elements.mainPlayer.addEventListener("ended", () => {
-      updatePlaylistControls();
-      advancePlaylist();
-    });
-    elements.mainPlayer.addEventListener("play", () => {
-      updatePlaylistControls();
-    });
-    elements.mainPlayer.addEventListener("playing", () => updatePlaylistControls());
-    elements.mainPlayer.addEventListener("pause", () => updatePlaylistControls());
-    elements.mainPlayer.addEventListener("error", () => {
-      const shouldAdvance = playlistIsActive();
-      showEmptyMedia("음원 파일을 불러오지 못했습니다");
-      updatePlaylistControls(`재생 오류 · 〈${selectedTrack()?.title || "선택한 노래"}〉`);
-      if (shouldAdvance) window.setTimeout(advancePlaylist, 0);
-    });
+
+    const bindLocalPlayer = (player, mode) => {
+      player.addEventListener("ended", () => {
+        updatePlaylistControls();
+        if (mode === "audio") advancePlaylist();
+      });
+      player.addEventListener("play", () => updatePlaylistControls());
+      player.addEventListener("playing", () => updatePlaylistControls());
+      player.addEventListener("pause", () => updatePlaylistControls());
+      player.addEventListener("error", () => {
+        const shouldAdvance = mode === "audio" && playlistIsActive();
+        showEmptyMedia(mode === "audio" ? "음원 파일을 불러오지 못했습니다" : "영상 파일을 불러오지 못했습니다");
+        updatePlaylistControls(`재생 오류 · 〈${selectedTrack()?.title || "선택한 노래"}〉`);
+        if (shouldAdvance) window.setTimeout(advancePlaylist, 0);
+      });
+    };
+    bindLocalPlayer(elements.mainPlayer, "audio");
+    bindLocalPlayer(elements.videoPlayer, "video");
     bindViewNavigation();
     bindTabs();
   };
@@ -685,7 +723,7 @@
           playlistMode: state.playlistMode,
           playlistQueue: [...state.playlistQueue],
           playlistIndex: state.playlistIndex,
-          playableIds: mp4Tracks().map((track) => track.id),
+          playableIds: audioTracks().map((track) => track.id),
           activeView: state.activeView,
         }),
         parseYoutubeId,

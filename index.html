@@ -21,7 +21,7 @@
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <link rel="manifest" href="./site.webmanifest">
-  <link rel="stylesheet" href="./styles.css?v=20260810-hero-copy1">
+  <link rel="stylesheet" href="./styles.css?v=20260810-audio-only1">
   <title>책이 노래가 될 때</title>
 </head>
 <body>
@@ -50,7 +50,7 @@
           </button>
         </div>
         <p class="playlist-status" id="playlist-status" data-playback-state="idle" role="status" aria-live="polite" aria-atomic="true">재생 대기</p>
-        <button class="playback-toggle-button" id="playback-toggle-button" type="button" data-action="unavailable" aria-controls="main-player" aria-label="재생할 노래가 없습니다" disabled>
+        <button class="playback-toggle-button" id="playback-toggle-button" type="button" data-action="unavailable" aria-controls="main-player video-player" aria-label="재생할 노래가 없습니다" disabled>
           <svg data-playback-icon="pause" viewBox="0 0 24 24" aria-hidden="true" hidden>
             <path d="M8 5v14M16 5v14"/>
           </svg>
@@ -140,8 +140,11 @@
 
           <div class="source-switch" id="source-switch" aria-label="재생 방법" hidden></div>
 
-          <div class="media-stage" id="media-stage">
-            <video id="main-player" controls playsinline preload="metadata" hidden>
+          <div class="media-stage" id="media-stage" data-media-kind="empty">
+            <audio id="main-player" controls preload="metadata" hidden>
+              이 브라우저에서는 음악 재생을 지원하지 않습니다.
+            </audio>
+            <video id="video-player" controls playsinline preload="metadata" hidden>
               이 브라우저에서는 영상 재생을 지원하지 않습니다.
             </video>
             <div class="youtube-stage" id="youtube-stage" hidden></div>
@@ -149,7 +152,7 @@
               <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M18 11v23.5a6 6 0 1 1-3-5.2V16l22-5v19.5a6 6 0 1 1-3-5.2V6L18 11Z"/></svg>
               <div>
                 <strong>음원을 준비하고 있습니다</strong>
-                <p>MP4 또는 영상 주소가 연결되면 이 자리에서 바로 재생할 수 있습니다.</p>
+                <p>MP3 또는 MP4 음원이 연결되면 영상 없이 음악만 재생됩니다.</p>
               </div>
             </div>
           </div>
@@ -180,7 +183,8 @@
           <select id="status-filter">
             <option value="all">전체 노래</option>
             <option value="available">재생 가능</option>
-            <option value="mp4">보관 음원</option>
+            <option value="audio">보관 음원</option>
+            <option value="video">영상</option>
             <option value="youtube">YouTube</option>
             <option value="pending">준비 중</option>
           </select>
@@ -262,6 +266,6 @@
   </footer>
 
   <noscript>이 웹사이트에서 노래 목록을 살펴보려면 JavaScript를 켜 주세요.</noscript>
-  <script src="./app.js?v=20260810-pause-control2" defer></script>
+  <script src="./app.js?v=20260810-audio-only1" defer></script>
 </body>
 </html>

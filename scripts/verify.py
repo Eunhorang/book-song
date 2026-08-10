@@ -44,13 +44,19 @@ def main() -> None:
         if entry is None:
             errors.append(f"{track['id']} 미디어 항목 누락")
             continue
-        if entry.get("mp4") and not (base/entry["mp4"]).is_file():
-            errors.append(f"{track['id']} MP4 연결 오류")
+        if "mp4" in entry:
+            errors.append(f"{track['id']} 이전 mp4 필드가 남아 있습니다.")
+        audio=entry.get("audio","")
+        if audio and (Path(audio).suffix.lower() not in {".mp3",".mp4"} or not (base/audio).is_file()):
+            errors.append(f"{track['id']} 오디오 연결 오류")
+        video=entry.get("video","")
+        if video and (Path(video).suffix.lower() != ".mp4" or not (base/video).is_file()):
+            errors.append(f"{track['id']} 영상 연결 오류")
         youtube=entry.get("youtube","")
         if youtube and not re.fullmatch(r"https://www\.youtube\.com/watch\?v=[A-Za-z0-9_-]{11}",youtube):
             errors.append(f"{track['id']} YouTube 주소 오류")
     html=(base/"index.html").read_text(encoding="utf-8")
-    for marker in ['lang="ko"','id="main-content"','class="skip-link"','id="track-search"','id="main-player"','class="header-playback"','aria-label="상단 노래 재생 메뉴"','id="shuffle-button"','id="playlist-status"','id="playback-toggle-button"','aria-controls="main-player"','data-action="unavailable"','data-playback-state="idle"','id="view-status"','data-view-link="library"','data-view-link="meaning"','data-view-link="about"','data-view-panel="home"','data-view-panel="library"','data-view-panel="meaning"','data-view-panel="about"','aria-live="polite"']:
+    for marker in ['lang="ko"','id="main-content"','class="skip-link"','id="track-search"','<audio id="main-player"','<video id="video-player"','data-media-kind="empty"','class="header-playback"','aria-label="상단 노래 재생 메뉴"','id="shuffle-button"','id="playlist-status"','id="playback-toggle-button"','aria-controls="main-player video-player"','data-action="unavailable"','data-playback-state="idle"','id="view-status"','data-view-link="library"','data-view-link="meaning"','data-view-link="about"','data-view-panel="home"','data-view-panel="library"','data-view-panel="meaning"','data-view-panel="about"','aria-live="polite"']:
         if marker not in html:
             errors.append(f"HTML 접근성 표식 누락: {marker}")
     for marker in ['<span class="hero-title-line">읽고 남은 마음을</span>','<span class="hero-title-line">노래로 기록합니다.</span>']:
@@ -67,14 +73,16 @@ def main() -> None:
             errors.append(f"상단 고정 재생 메뉴 배치 오류: {marker}")
     if 'id="play-all-button"' in html:
         errors.append("삭제 요청된 모든 노래 재생 버튼이 남아 있습니다.")
+    if '<video id="main-player"' in html:
+        errors.append("기본 플레이어가 영상 요소로 남아 있습니다.")
     stylesheet=(base/"styles.css").read_text(encoding="utf-8")
-    for marker in [".site-header", "position: sticky", ".header-playback", '.playlist-status[data-playback-state="playing"]', ".playback-toggle-button", '[data-action="pause"]', ':not([aria-pressed="true"])', '-webkit-text-fill-color: #fff', ".hero-title-line"]:
+    for marker in [".site-header", "position: sticky", ".header-playback", '.playlist-status[data-playback-state="playing"]', ".playback-toggle-button", '[data-action="pause"]', ':not([aria-pressed="true"])', '-webkit-text-fill-color: #fff', ".hero-title-line", '.media-stage[data-media-kind="audio"]', "#video-player"]:
         if marker not in stylesheet:
             errors.append(f"상단 고정 스타일 누락: {marker}")
     javascript=(base/"app.js").read_text(encoding="utf-8")
     if "playAllButton" in javascript:
         errors.append("삭제 요청된 모든 노래 재생 버튼 JavaScript 참조가 남아 있습니다.")
-    for marker in ['const startPlaylist','const advancePlaylist','playlistQueue','shuffleIds','const setActiveView','addEventListener("popstate"','activeView','const setHeaderPlaybackStatus','const updatePlaybackToggle','playbackToggleButton.addEventListener("click"','현재 재생 중인 노래는','mediaStatus(track.id).key === "pending"','addEventListener("pause"']:
+    for marker in ['const startPlaylist','const advancePlaylist','playlistQueue','shuffleIds','const setActiveView','addEventListener("popstate"','activeView','const setHeaderPlaybackStatus','const updatePlaybackToggle','playbackToggleButton.addEventListener("click"','현재 재생 중인 노래는','mediaStatus(track.id).key === "pending"','const audioTracks','const renderAudio','const renderVideo','state.mediaMode === "audio"','bindLocalPlayer(elements.mainPlayer, "audio")','addEventListener("pause"']:
         if marker not in javascript:
             errors.append(f"연속 재생 기능 누락: {marker}")
     text_files=[p for p in base.rglob("*") if p.is_file() and p.suffix.lower() in {".html",".css",".js",".json",".webmanifest",".svg",".txt"}]
@@ -94,7 +102,7 @@ def main() -> None:
     if errors:
         print(json.dumps({"result":"FAIL","errors":errors},ensure_ascii=False,indent=2))
         raise SystemExit(1)
-    print(json.dumps({"result":"PASS","tracks":len(tracks),"mp4":sum(bool(v.get('mp4')) for v in media.values()),"youtube":sum(bool(v.get('youtube')) for v in media.values()),"publicProcessWordingHits":0,"privacyHits":0},ensure_ascii=False,indent=2))
+    print(json.dumps({"result":"PASS","tracks":len(tracks),"audio":sum(bool(v.get('audio')) for v in media.values()),"video":sum(bool(v.get('video')) for v in media.values()),"youtube":sum(bool(v.get('youtube')) for v in media.values()),"publicProcessWordingHits":0,"privacyHits":0},ensure_ascii=False,indent=2))
 
 
 if __name__ == "__main__":
