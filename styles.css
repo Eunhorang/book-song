@@ -464,6 +464,10 @@ svg {
   font-weight: 760;
 }
 
+.hero-title-line {
+  display: block;
+}
+
 .hero-lead {
   max-width: 640px;
   margin: 28px 0 0;

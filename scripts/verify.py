@@ -53,6 +53,11 @@ def main() -> None:
     for marker in ['lang="ko"','id="main-content"','class="skip-link"','id="track-search"','id="main-player"','class="header-playback"','aria-label="상단 노래 재생 메뉴"','id="shuffle-button"','id="playlist-status"','id="playback-toggle-button"','aria-controls="main-player"','data-action="unavailable"','data-playback-state="idle"','id="view-status"','data-view-link="library"','data-view-link="meaning"','data-view-link="about"','data-view-panel="home"','data-view-panel="library"','data-view-panel="meaning"','data-view-panel="about"','aria-live="polite"']:
         if marker not in html:
             errors.append(f"HTML 접근성 표식 누락: {marker}")
+    for marker in ['<span class="hero-title-line">읽고 남은 마음을</span>','<span class="hero-title-line">노래로 기록합니다.</span>']:
+        if marker not in html:
+            errors.append(f"첫 화면 대표 문구 누락: {marker}")
+    if "한 권의 질문이 한 곡의 노래가 됩니다." in html:
+        errors.append("교체 요청된 이전 대표 문구가 남아 있습니다.")
     for legacy_anchor in ['href="#library"','href="#interpretation"','href="#about"']:
         if legacy_anchor in html:
             errors.append(f"스크롤 방식 메뉴가 남아 있습니다: {legacy_anchor}")
@@ -63,7 +68,7 @@ def main() -> None:
     if 'id="play-all-button"' in html:
         errors.append("삭제 요청된 모든 노래 재생 버튼이 남아 있습니다.")
     stylesheet=(base/"styles.css").read_text(encoding="utf-8")
-    for marker in [".site-header", "position: sticky", ".header-playback", '.playlist-status[data-playback-state="playing"]', ".playback-toggle-button", '[data-action="pause"]', ':not([aria-pressed="true"])', '-webkit-text-fill-color: #fff']:
+    for marker in [".site-header", "position: sticky", ".header-playback", '.playlist-status[data-playback-state="playing"]', ".playback-toggle-button", '[data-action="pause"]', ':not([aria-pressed="true"])', '-webkit-text-fill-color: #fff', ".hero-title-line"]:
         if marker not in stylesheet:
             errors.append(f"상단 고정 스타일 누락: {marker}")
     javascript=(base/"app.js").read_text(encoding="utf-8")
