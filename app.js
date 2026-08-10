@@ -362,7 +362,7 @@
     text(elements.playerBook, `${track.author} 《${track.book}》`);
     text(elements.playerMessage, track.message);
     text(elements.playerHook, track.hook);
-    text(elements.selectionStatus, `〈${track.title}〉을 선택했습니다.`);
+    text(elements.selectionStatus, `선택한 곡은 〈${track.title}〉입니다.`);
     renderSourceSwitch(track);
     renderDetails(track);
     renderLibrary();
