@@ -10,7 +10,7 @@ import subprocess
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
-REQUIRED=["index.html","styles.css","app.js","site.webmanifest","data/tracks.json","data/media.json","fonts/Gaegu-Regular.woff2","fonts/Gaegu-Bold.woff2","fonts/OFL-Gaegu.txt","fonts/PretendardVariable.woff2","fonts/LICENSE.txt","assets/brand-main.jpg","assets/brand-symbol.png","assets/favicon-64.png","assets/og-card.png","icons/icon-192.png","icons/icon-512.png","icons/apple-touch-icon.png"]
+REQUIRED=["index.html","styles.css","app.js","site.webmanifest","data/tracks.json","data/media.json","fonts/PretendardVariable.woff2","fonts/LICENSE.txt","assets/brand-main.jpg","assets/brand-symbol.png","assets/favicon-64.png","assets/og-card.png","icons/icon-192.png","icons/icon-512.png","icons/apple-touch-icon.png"]
 PROCESS_WORDS=re.compile(r"Suno|생성형|프롬프트|옵시디언|Obsidian|workflow|draft",re.I)
 SECRET_WORDS=re.compile(r"(?:api[_-]?key|access[_-]?token|client[_-]?secret|password)\s*[:=]",re.I)
 EMAIL=re.compile(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}")
@@ -56,7 +56,7 @@ def main() -> None:
         if youtube and not re.fullmatch(r"https://www\.youtube\.com/watch\?v=[A-Za-z0-9_-]{11}",youtube):
             errors.append(f"{track['id']} YouTube 주소 오류")
     html=(base/"index.html").read_text(encoding="utf-8")
-    for marker in ['lang="ko"','id="main-content"','class="skip-link"','id="track-search"','<audio id="main-player"','<video id="video-player"','data-media-kind="empty"','class="header-playback"','aria-label="상단 노래 재생 메뉴"','id="shuffle-button"','id="playlist-status"','id="playback-toggle-button"','aria-controls="main-player video-player"','data-action="unavailable"','data-playback-state="idle"','id="view-status"','data-view-link="library"','data-view-link="meaning"','data-view-link="about"','data-view-panel="home"','data-view-panel="library"','data-view-panel="meaning"','data-view-panel="about"','aria-live="polite"','class="brand-mark" src="./assets/brand-symbol.png"','class="hero-brand-image" src="./assets/brand-main.jpg"','href="./assets/favicon-64.png"','href="./fonts/Gaegu-Regular.woff2"','href="./fonts/Gaegu-Bold.woff2"']:
+    for marker in ['lang="ko"','id="main-content"','class="skip-link"','id="track-search"','<audio id="main-player"','<video id="video-player"','data-media-kind="empty"','class="header-playback"','aria-label="상단 노래 재생 메뉴"','id="shuffle-button"','id="playlist-status"','id="playback-toggle-button"','aria-controls="main-player video-player"','data-action="unavailable"','data-playback-state="idle"','id="view-status"','data-view-link="library"','data-view-link="meaning"','data-view-link="about"','data-view-panel="home"','data-view-panel="library"','data-view-panel="meaning"','data-view-panel="about"','aria-live="polite"','class="brand-mark" src="./assets/brand-symbol.png"','class="hero-brand-image" src="./assets/brand-main.jpg"','href="./assets/favicon-64.png"','href="./fonts/PretendardVariable.woff2"']:
         if marker not in html:
             errors.append(f"HTML 접근성 표식 누락: {marker}")
     for marker in ['<span class="hero-title-line">읽고 남은 마음을</span>','<span class="hero-title-line">노래로 기록합니다.</span>']:
@@ -76,12 +76,14 @@ def main() -> None:
     if '<video id="main-player"' in html:
         errors.append("기본 플레이어가 영상 요소로 남아 있습니다.")
     stylesheet=(base/"styles.css").read_text(encoding="utf-8")
-    for marker in [".site-header", "position: sticky", ".header-playback", '.playlist-status[data-playback-state="playing"]', ".playback-toggle-button", '[data-action="pause"]', ':not([aria-pressed="true"])', '-webkit-text-fill-color: #fff', ".hero-title-line", '.media-stage[data-media-kind="audio"]', "#video-player", 'font-family: "Gaegu"', 'url("./fonts/Gaegu-Regular.woff2")', 'url("./fonts/Gaegu-Bold.woff2")', '.hero-brand-image', 'background-image: url("./assets/brand-main.jpg")']:
+    for marker in [".site-header", "position: sticky", ".header-playback", '.playlist-status[data-playback-state="playing"]', ".playback-toggle-button", '[data-action="pause"]', ':not([aria-pressed="true"])', '-webkit-text-fill-color: #fff', ".hero-title-line", '.media-stage[data-media-kind="audio"]', "#video-player", 'font-family: "Pretendard"', 'url("./fonts/PretendardVariable.woff2")', '.hero-brand-image', 'background-image: url("./assets/brand-main.jpg")']:
         if marker not in stylesheet:
             errors.append(f"상단 고정 스타일 누락: {marker}")
     body_block=stylesheet.partition("body {")[2].partition("}")[0]
-    if 'font-family: "Gaegu"' not in body_block:
-        errors.append("본문 한글 필기체 적용 누락")
+    if 'font-family: "Pretendard"' not in body_block:
+        errors.append("본문 가독성 글꼴 적용 누락")
+    if 'font-family: "Gaegu"' in stylesheet:
+        errors.append("사용 중지한 손글씨 글꼴이 CSS에 남아 있습니다.")
     javascript=(base/"app.js").read_text(encoding="utf-8")
     if "playAllButton" in javascript:
         errors.append("삭제 요청된 모든 노래 재생 버튼 JavaScript 참조가 남아 있습니다.")
