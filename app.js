@@ -41,7 +41,6 @@
     mainPlayer: document.querySelector("#main-player"),
     youtubeStage: document.querySelector("#youtube-stage"),
     mediaEmpty: document.querySelector("#media-empty"),
-    playAllButton: document.querySelector("#play-all-button"),
     shuffleButton: document.querySelector("#shuffle-button"),
     playlistStatus: document.querySelector("#playlist-status"),
     trackSearch: document.querySelector("#track-search"),
@@ -173,7 +172,7 @@
     state.playlistIndex >= 0 &&
     state.playlistIndex < state.playlistQueue.length;
 
-  const playlistLabel = () => (state.playlistMode === "shuffle" ? "랜덤 노래 재생" : "모든 노래 재생");
+  const playlistLabel = () => (state.playlistMode === "shuffle" ? "랜덤 노래 재생" : "연속 재생");
 
   const shuffleIds = (ids) => {
     const shuffled = [...ids];
@@ -197,12 +196,9 @@
   const updatePlaylistControls = (message = "") => {
     const available = mp4Tracks();
     const disabled = available.length === 0;
-    elements.playAllButton.disabled = disabled;
     elements.shuffleButton.disabled = disabled;
-    elements.playAllButton.setAttribute("aria-pressed", state.playlistMode === "sequential" ? "true" : "false");
     elements.shuffleButton.setAttribute("aria-pressed", state.playlistMode === "shuffle" ? "true" : "false");
-    elements.playAllButton.setAttribute("aria-label", `현재 재생 가능한 보관 음원 ${available.length}곡을 번호순으로 재생`);
-    elements.shuffleButton.setAttribute("aria-label", `현재 재생 가능한 보관 음원 ${available.length}곡을 무작위 순서로 재생`);
+    elements.shuffleButton.setAttribute("aria-label", `현재 재생 가능한 보관 음원 ${available.length}곡을 중복 없이 무작위 순서로 재생`);
 
     if (message) {
       setHeaderPlaybackStatus(message, "notice");
@@ -576,7 +572,6 @@
       if (firstAvailable) selectTrack(firstAvailable.id, { updateUrl: true });
       setActiveView("library", { historyMode: "push", focus: true });
     });
-    elements.playAllButton.addEventListener("click", () => startPlaylist("sequential"));
     elements.shuffleButton.addEventListener("click", () => startPlaylist("shuffle"));
     elements.mainPlayer.addEventListener("ended", () => {
       updatePlaylistControls();
@@ -605,7 +600,6 @@
     elements.noResults.hidden = false;
     elements.noResults.querySelector("strong").textContent = "노래 목록을 불러오지 못했습니다.";
     elements.noResults.querySelector("p").textContent = "페이지를 새로고침해 주세요.";
-    elements.playAllButton.disabled = true;
     elements.shuffleButton.disabled = true;
     setHeaderPlaybackStatus("노래 목록을 불러오지 못했습니다", "notice");
   };
