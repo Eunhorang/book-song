@@ -220,6 +220,10 @@
     const playlistContext = playlistIsActive()
       ? `${playlistLabel()} ${state.playlistIndex + 1}/${state.playlistQueue.length}. `
       : "";
+    if (mediaStatus(track.id).key === "pending") {
+      setHeaderPlaybackStatus(`음원 준비 중 · ${title}`, "pending", `${title} 음원을 준비하고 있습니다.`);
+      return;
+    }
     if (state.mediaMode === "mp4" && !elements.mainPlayer.hidden) {
       if (!elements.mainPlayer.paused && !elements.mainPlayer.ended) {
         setHeaderPlaybackStatus(

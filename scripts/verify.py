@@ -65,7 +65,7 @@ def main() -> None:
         if marker not in stylesheet:
             errors.append(f"상단 고정 스타일 누락: {marker}")
     javascript=(base/"app.js").read_text(encoding="utf-8")
-    for marker in ['const startPlaylist','const advancePlaylist','playlistQueue','shuffleIds','const setActiveView','addEventListener("popstate"','activeView','const setHeaderPlaybackStatus','현재 재생 중인 노래는','addEventListener("pause"']:
+    for marker in ['const startPlaylist','const advancePlaylist','playlistQueue','shuffleIds','const setActiveView','addEventListener("popstate"','activeView','const setHeaderPlaybackStatus','현재 재생 중인 노래는','mediaStatus(track.id).key === "pending"','addEventListener("pause"']:
         if marker not in javascript:
             errors.append(f"연속 재생 기능 누락: {marker}")
     text_files=[p for p in base.rglob("*") if p.is_file() and p.suffix.lower() in {".html",".css",".js",".json",".webmanifest",".svg",".txt"}]
