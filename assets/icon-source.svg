@@ -1,7 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#f4dfd4"/>
-  <circle cx="256" cy="256" r="184" fill="none" stroke="#b85c38" stroke-opacity=".14" stroke-width="34"/>
-  <path d="M96 148c64-24 116-12 160 24v232c-44-36-96-48-160-24V148Z" fill="#fffaf5" stroke="#793921" stroke-width="18" stroke-linejoin="round"/>
-  <path d="M416 148c-64-24-116-12-160 24v232c44-36 96-48 160-24V148Z" fill="#fffaf5" stroke="#793921" stroke-width="18" stroke-linejoin="round"/>
-  <path d="M128 260c24-48 48 48 72 0s48 48 72 0 48 48 72 0 48 48 72 0" fill="none" stroke="#b85c38" stroke-width="22" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>책이 노래가 될 때 앱 아이콘 원본</title>
+  <image href="brand-main.jpg" width="512" height="512"/>
 </svg>

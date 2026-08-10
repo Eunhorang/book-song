@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#f7f3ec">
+  <meta name="theme-color" content="#fdf1e5">
   <meta name="color-scheme" content="light">
   <meta name="author" content="이정주">
   <meta name="description" content="책이 남긴 질문을 노래와 가사 해석으로 만나는 이정주의 음악 아카이브">
@@ -16,12 +16,16 @@
   <meta property="og:image" content="https://eunhorang.github.io/book-song/assets/og-card.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="손그림 책과 음표, 책이 노래가 될 때 로고">
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://eunhorang.github.io/book-song/assets/og-card.png">
   <link rel="canonical" href="https://eunhorang.github.io/book-song/">
-  <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="./assets/favicon-64.png" type="image/png" sizes="64x64">
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <link rel="manifest" href="./site.webmanifest">
-  <link rel="stylesheet" href="./styles.css?v=20260810-audio-only1">
+  <link rel="preload" href="./fonts/Gaegu-Regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="./fonts/Gaegu-Bold.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="./styles.css?v=20260810-brand1">
   <title>책이 노래가 될 때</title>
 </head>
 <body>
@@ -30,11 +34,7 @@
   <header class="site-header">
     <div class="header-inner">
       <a class="brand" href="?view=home" data-view-link="home" aria-label="책이 노래가 될 때 처음 화면">
-        <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true">
-          <path d="M8 12.5c6.4-2.5 11.8-1.4 16 2.2v22.8c-4.2-3.6-9.6-4.7-16-2.2V12.5Z"/>
-          <path d="M40 12.5c-6.4-2.5-11.8-1.4-16 2.2v22.8c4.2-3.6 9.6-4.7 16-2.2V12.5Z"/>
-          <path class="brand-wave" d="M13 23c2.1-4.1 4.2 4.1 6.3 0s4.2 4.1 6.3 0 4.2 4.1 6.3 0 4.2 4.1 6.3 0"/>
-        </svg>
+        <img class="brand-mark" src="./assets/brand-symbol.png" width="512" height="512" alt="">
         <span>
           <strong>책이 노래가 될 때</strong>
           <small>이정주의 사유음악실</small>
@@ -93,19 +93,8 @@
           </dl>
         </div>
 
-        <div class="hero-art" aria-label="펼친 책 위로 노래가 흐르는 상징 그림" role="img">
-          <div class="orbit orbit-one"></div>
-          <div class="orbit orbit-two"></div>
-          <div class="record">
-            <span class="record-ring ring-one"></span>
-            <span class="record-ring ring-two"></span>
-            <span class="record-label">
-              <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M9 13c6-2.2 11-1 15 2v21c-4-3-9-4.2-15-2V13Zm30 0c-6-2.2-11-1-15 2v21c4-3 9-4.2 15-2V13Z"/></svg>
-            </span>
-          </div>
-          <div class="sound-lines" aria-hidden="true">
-            <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-          </div>
+        <div class="hero-art">
+          <img class="hero-brand-image" src="./assets/brand-main.jpg" width="886" height="886" alt="손그림 책과 음표 아래 책이 노래가 될 때라고 적힌 프로젝트 로고">
           <p class="hero-note">읽기에서 시작해<br>노래로 오래 남기는 기록</p>
         </div>
       </div>
@@ -266,6 +255,6 @@
   </footer>
 
   <noscript>이 웹사이트에서 노래 목록을 살펴보려면 JavaScript를 켜 주세요.</noscript>
-  <script src="./app.js?v=20260810-audio-only1" defer></script>
+  <script src="./app.js?v=20260810-brand1" defer></script>
 </body>
 </html>
