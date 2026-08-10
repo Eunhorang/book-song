@@ -22,6 +22,7 @@
   };
 
   const elements = {
+    siteHeader: document.querySelector(".site-header"),
     songCount: document.querySelector("#song-count"),
     bookCount: document.querySelector("#book-count"),
     heroListen: document.querySelector("#hero-listen"),
@@ -49,6 +50,9 @@
     playbackToggleLabel: document.querySelector("#playback-toggle-label"),
     playbackPauseIcon: document.querySelector('[data-playback-icon="pause"]'),
     playbackPlayIcon: document.querySelector('[data-playback-icon="play"]'),
+    libraryJump: document.querySelector("#library-jump"),
+    librarySection: document.querySelector("#library"),
+    libraryHeading: document.querySelector("#library-heading"),
     trackSearch: document.querySelector("#track-search"),
     statusFilter: document.querySelector("#status-filter"),
     trackGrid: document.querySelector("#track-grid"),
@@ -117,13 +121,38 @@
     window.history[mode === "push" ? "pushState" : "replaceState"]({ view }, "", url);
   };
 
+  const focusTemporarily = (element) => {
+    if (!element) return;
+    element.tabIndex = -1;
+    element.focus({ preventScroll: true });
+    element.addEventListener("blur", () => element.removeAttribute("tabindex"), { once: true });
+  };
+
   const focusViewHeading = (view) => {
     const panel = elements.viewPanels.find((item) => item.dataset.viewPanel === view && !item.hidden);
-    const heading = panel?.querySelector("h1, h2");
-    if (!heading) return;
-    heading.tabIndex = -1;
-    heading.focus({ preventScroll: true });
-    heading.addEventListener("blur", () => heading.removeAttribute("tabindex"), { once: true });
+    focusTemporarily(panel?.querySelector("h1, h2"));
+  };
+
+  const updateHeaderDensity = () => {
+    const mobile = window.matchMedia("(max-width: 760px)").matches;
+    const condensed = elements.siteHeader.dataset.condensed === "true";
+    const next = mobile && (condensed ? window.scrollY > 24 : window.scrollY > 72);
+    elements.siteHeader.dataset.condensed = next ? "true" : "false";
+  };
+
+  const bindResponsiveHeader = () => {
+    let scheduled = false;
+    const schedule = () => {
+      if (scheduled) return;
+      scheduled = true;
+      window.requestAnimationFrame(() => {
+        updateHeaderDensity();
+        scheduled = false;
+      });
+    };
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    updateHeaderDensity();
   };
 
   const setActiveView = (value, options = {}) => {
@@ -644,6 +673,11 @@
       state.filter = event.target.value;
       renderLibrary();
     });
+    elements.libraryJump.addEventListener("click", () => {
+      elements.librarySection.scrollIntoView({ block: "start" });
+      window.requestAnimationFrame(() => focusTemporarily(elements.libraryHeading));
+      text(elements.viewStatus, "음악 보관함 곡 목록으로 이동했습니다.");
+    });
     elements.heroListen.addEventListener("click", () => {
       const firstAvailable = state.tracks.find((track) => mediaStatus(track.id).key !== "pending") || state.tracks[0];
       if (firstAvailable) selectTrack(firstAvailable.id, { updateUrl: true });
@@ -683,6 +717,7 @@
     bindLocalPlayer(elements.videoPlayer, "video");
     bindViewNavigation();
     bindTabs();
+    bindResponsiveHeader();
   };
 
   const showLoadError = () => {

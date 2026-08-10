@@ -24,16 +24,16 @@
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <link rel="manifest" href="./site.webmanifest">
   <link rel="preload" href="./fonts/PretendardVariable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="./styles.css?v=20260811-readable-font1">
+  <link rel="stylesheet" href="./styles.css?v=20260811-design-review1">
   <title>책이 노래가 될 때</title>
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 바로가기</a>
 
-  <header class="site-header">
+  <header class="site-header" data-condensed="false">
     <div class="header-inner">
       <a class="brand" href="?view=home" data-view-link="home" aria-label="책이 노래가 될 때 처음 화면">
-        <img class="brand-mark" src="./assets/brand-symbol.png" width="512" height="512" alt="">
+        <img class="brand-mark" src="./assets/brand-symbol.png" width="512" height="512" alt="" decoding="async">
         <span>
           <strong>책이 노래가 될 때</strong>
           <small>이정주의 사유음악실</small>
@@ -93,7 +93,7 @@
         </div>
 
         <div class="hero-art">
-          <img class="hero-brand-image" src="./assets/brand-main.jpg" width="886" height="886" alt="손그림 책과 음표 아래 책이 노래가 될 때라고 적힌 프로젝트 로고">
+          <img class="hero-brand-image" src="./assets/brand-main.jpg" width="886" height="886" alt="손그림 책과 음표 아래 책이 노래가 될 때라고 적힌 프로젝트 로고" decoding="async" fetchpriority="high">
           <p class="hero-note">읽기에서 시작해<br>노래로 오래 남기는 기록</p>
         </div>
       </div>
@@ -105,7 +105,13 @@
           <p class="eyebrow">NOW SELECTED</p>
           <h2 id="player-heading">선택한 노래</h2>
         </div>
-        <p id="selection-status" class="selection-status" aria-live="polite">노래 목록을 불러오는 중입니다.</p>
+        <div class="section-heading-meta">
+          <p id="selection-status" class="selection-status" aria-live="polite">노래 목록을 불러오는 중입니다.</p>
+          <button class="section-jump" id="library-jump" type="button" aria-controls="library">
+            곡 목록 바로가기
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+          </button>
+        </div>
       </div>
 
       <div class="player-card" id="player-card">
@@ -146,6 +152,10 @@
           </div>
 
           <blockquote class="hook-quote" id="player-hook"></blockquote>
+          <a class="player-detail-link" href="?view=meaning" data-view-link="meaning" aria-controls="interpretation">
+            가사와 의미 살펴보기
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>
+          </a>
         </div>
       </div>
     </section>
@@ -254,6 +264,6 @@
   </footer>
 
   <noscript>이 웹사이트에서 노래 목록을 살펴보려면 JavaScript를 켜 주세요.</noscript>
-  <script src="./app.js?v=20260810-brand1" defer></script>
+  <script src="./app.js?v=20260811-design-review1" defer></script>
 </body>
 </html>
