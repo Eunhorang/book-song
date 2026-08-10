@@ -667,6 +667,77 @@ svg {
   text-wrap: pretty;
 }
 
+.playlist-controls {
+  margin: 0 0 14px;
+  padding: 14px;
+  display: grid;
+  gap: 9px;
+  background: color-mix(in srgb, var(--track-soft) 58%, white);
+  border: 1px solid color-mix(in srgb, var(--track-accent) 18%, var(--line));
+  border-radius: 14px;
+}
+
+.playlist-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.playlist-button {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--track-ink);
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid color-mix(in srgb, var(--track-accent) 25%, var(--line));
+  border-radius: 10px;
+  font-size: 0.86rem;
+  font-weight: 740;
+  cursor: pointer;
+  transition: color 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.playlist-button svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+.playlist-button:hover:not(:disabled) {
+  background: #fff;
+  border-color: color-mix(in srgb, var(--track-accent) 52%, var(--line));
+  box-shadow: 0 5px 14px rgba(52, 41, 28, 0.08);
+}
+
+.playlist-button[aria-pressed="true"] {
+  color: #fff;
+  background: var(--track-accent);
+  border-color: var(--track-accent);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--track-accent) 24%, transparent);
+}
+
+.playlist-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.playlist-status {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-weight: 620;
+  line-height: 1.55;
+}
+
 .source-switch {
   display: inline-flex;
   gap: 4px;
@@ -1479,6 +1550,10 @@ noscript {
     align-items: flex-start;
     flex-direction: column;
     text-align: left;
+  }
+
+  .playlist-buttons {
+    grid-template-columns: 1fr;
   }
 
   .tabs {

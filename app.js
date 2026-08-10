@@ -8,6 +8,9 @@
     mediaMode: null,
     query: "",
     filter: "all",
+    playlistMode: null,
+    playlistQueue: [],
+    playlistIndex: -1,
   };
 
   const elements = {
@@ -30,6 +33,9 @@
     mainPlayer: document.querySelector("#main-player"),
     youtubeStage: document.querySelector("#youtube-stage"),
     mediaEmpty: document.querySelector("#media-empty"),
+    playAllButton: document.querySelector("#play-all-button"),
+    shuffleButton: document.querySelector("#shuffle-button"),
+    playlistStatus: document.querySelector("#playlist-status"),
     trackSearch: document.querySelector("#track-search"),
     statusFilter: document.querySelector("#status-filter"),
     trackGrid: document.querySelector("#track-grid"),
@@ -68,6 +74,64 @@
     if (media.mp4) return { key: "mp4", label: "보관 음원" };
     if (media.youtube) return { key: "youtube", label: "YouTube" };
     return { key: "pending", label: "준비 중" };
+  };
+
+  const mp4Tracks = () => state.tracks.filter((track) => Boolean(mediaFor(track.id).mp4));
+
+  const playlistIsActive = () =>
+    Boolean(state.playlistMode) &&
+    state.playlistIndex >= 0 &&
+    state.playlistIndex < state.playlistQueue.length;
+
+  const playlistLabel = () => (state.playlistMode === "shuffle" ? "랜덤 재생" : "모든 노래 재생");
+
+  const shuffleIds = (ids) => {
+    const shuffled = [...ids];
+    for (let index = shuffled.length - 1; index > 0; index -= 1) {
+      const swapIndex = Math.floor(Math.random() * (index + 1));
+      [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+    }
+    if (shuffled.length > 1 && shuffled.every((id, index) => id === ids[index])) {
+      [shuffled[0], shuffled[1]] = [shuffled[1], shuffled[0]];
+    }
+    return shuffled;
+  };
+
+  const updatePlaylistControls = (message = "") => {
+    const available = mp4Tracks();
+    const disabled = available.length === 0;
+    elements.playAllButton.disabled = disabled;
+    elements.shuffleButton.disabled = disabled;
+    elements.playAllButton.setAttribute("aria-pressed", state.playlistMode === "sequential" ? "true" : "false");
+    elements.shuffleButton.setAttribute("aria-pressed", state.playlistMode === "shuffle" ? "true" : "false");
+    elements.playAllButton.setAttribute("aria-label", `현재 재생 가능한 보관 음원 ${available.length}곡을 번호순으로 재생`);
+    elements.shuffleButton.setAttribute("aria-label", `현재 재생 가능한 보관 음원 ${available.length}곡을 무작위 순서로 재생`);
+
+    if (message) {
+      text(elements.playlistStatus, message);
+      return;
+    }
+    if (playlistIsActive()) {
+      const track = state.tracks.find((item) => item.id === state.playlistQueue[state.playlistIndex]);
+      text(
+        elements.playlistStatus,
+        `${playlistLabel()} ${state.playlistIndex + 1}/${state.playlistQueue.length} · 〈${track?.title || "노래"}〉 재생 중`,
+      );
+      return;
+    }
+    text(
+      elements.playlistStatus,
+      disabled
+        ? "연속 재생할 보관 음원이 아직 없습니다."
+        : `현재 준비된 보관 음원 ${available.length}곡을 순서대로 또는 무작위로 들을 수 있습니다.`,
+    );
+  };
+
+  const clearPlaylist = (message = "") => {
+    state.playlistMode = null;
+    state.playlistQueue = [];
+    state.playlistIndex = -1;
+    updatePlaylistControls(message);
   };
 
   const parseYoutubeId = (value) => {
@@ -237,6 +301,9 @@
       button.textContent = option.label;
       button.setAttribute("aria-pressed", option.key === state.mediaMode ? "true" : "false");
       button.addEventListener("click", () => {
+        if (playlistIsActive() && option.key !== "mp4") {
+          clearPlaylist("YouTube 재생을 선택하여 연속 재생을 종료했습니다.");
+        }
         state.mediaMode = option.key;
         renderSourceSwitch(track);
         renderMediaMode();
@@ -280,6 +347,7 @@
   };
 
   const selectTrack = (trackId, options = {}) => {
+    if (!options.preservePlaylist && playlistIsActive()) clearPlaylist();
     const track = state.tracks.find((item) => item.id === trackId) || state.tracks[0];
     if (!track) return;
     state.selectedId = track.id;
@@ -298,8 +366,49 @@
     renderSourceSwitch(track);
     renderDetails(track);
     renderLibrary();
+    updatePlaylistControls();
     document.title = `${track.title} | 책이 노래가 될 때`;
     if (options.updateUrl) updateUrl(track.id);
+  };
+
+  const playPlaylistItem = () => {
+    if (!playlistIsActive()) return;
+    const trackId = state.playlistQueue[state.playlistIndex];
+    selectTrack(trackId, { updateUrl: true, preservePlaylist: true });
+    if (state.mediaMode !== "mp4" || elements.mainPlayer.hidden) {
+      window.setTimeout(advancePlaylist, 0);
+      return;
+    }
+    updatePlaylistControls();
+    const playback = elements.mainPlayer.play();
+    if (playback && typeof playback.catch === "function") {
+      playback.catch(() => {
+        updatePlaylistControls("자동 재생이 차단되었습니다. 영상의 재생 버튼을 누르면 연속 재생이 이어집니다.");
+      });
+    }
+  };
+
+  const advancePlaylist = () => {
+    if (!playlistIsActive()) return;
+    if (state.playlistIndex >= state.playlistQueue.length - 1) {
+      const finishedLabel = playlistLabel();
+      clearPlaylist(`${finishedLabel}이 끝났습니다. 다시 들으려면 버튼을 눌러 주세요.`);
+      return;
+    }
+    state.playlistIndex += 1;
+    playPlaylistItem();
+  };
+
+  const startPlaylist = (mode) => {
+    const ids = mp4Tracks().map((track) => track.id);
+    if (ids.length === 0) {
+      clearPlaylist("연속 재생할 보관 음원이 아직 없습니다.");
+      return;
+    }
+    state.playlistMode = mode;
+    state.playlistQueue = mode === "shuffle" ? shuffleIds(ids) : ids;
+    state.playlistIndex = 0;
+    playPlaylistItem();
   };
 
   const activateTab = (tab) => {
@@ -343,8 +452,16 @@
       if (firstAvailable) selectTrack(firstAvailable.id, { updateUrl: true });
       document.querySelector("#listen").scrollIntoView({ behavior: "smooth", block: "start" });
     });
+    elements.playAllButton.addEventListener("click", () => startPlaylist("sequential"));
+    elements.shuffleButton.addEventListener("click", () => startPlaylist("shuffle"));
+    elements.mainPlayer.addEventListener("ended", advancePlaylist);
+    elements.mainPlayer.addEventListener("play", () => {
+      if (playlistIsActive()) updatePlaylistControls();
+    });
     elements.mainPlayer.addEventListener("error", () => {
+      const shouldAdvance = playlistIsActive();
       showEmptyMedia("음원 파일을 불러오지 못했습니다");
+      if (shouldAdvance) window.setTimeout(advancePlaylist, 0);
     });
     bindTabs();
   };
@@ -357,6 +474,9 @@
     elements.noResults.hidden = false;
     elements.noResults.querySelector("strong").textContent = "노래 목록을 불러오지 못했습니다.";
     elements.noResults.querySelector("p").textContent = "페이지를 새로고침해 주세요.";
+    elements.playAllButton.disabled = true;
+    elements.shuffleButton.disabled = true;
+    text(elements.playlistStatus, "노래 목록을 불러온 뒤 연속 재생을 사용할 수 있습니다.");
   };
 
   const init = async () => {
@@ -376,9 +496,18 @@
       selectTrack(state.tracks.some((track) => track.id === requested) ? requested : state.tracks[0]?.id);
       window.__BOOK_SONG_READY__ = true;
       window.__BOOK_SONG_APP__ = {
-        getState: () => ({ selectedId: state.selectedId, count: state.tracks.length, mediaMode: state.mediaMode }),
+        getState: () => ({
+          selectedId: state.selectedId,
+          count: state.tracks.length,
+          mediaMode: state.mediaMode,
+          playlistMode: state.playlistMode,
+          playlistQueue: [...state.playlistQueue],
+          playlistIndex: state.playlistIndex,
+          playableIds: mp4Tracks().map((track) => track.id),
+        }),
         parseYoutubeId,
         selectTrack: (id) => selectTrack(String(id).padStart(2, "0"), { updateUrl: false }),
+        startPlaylist,
       };
     } catch (error) {
       console.error("노래 데이터를 불러오지 못했습니다.", error);

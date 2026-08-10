@@ -50,9 +50,13 @@ def main() -> None:
         if youtube and not re.fullmatch(r"https://www\.youtube\.com/watch\?v=[A-Za-z0-9_-]{11}",youtube):
             errors.append(f"{track['id']} YouTube 주소 오류")
     html=(base/"index.html").read_text(encoding="utf-8")
-    for marker in ['lang="ko"','id="main-content"','class="skip-link"','id="track-search"','id="main-player"','aria-live="polite"']:
+    for marker in ['lang="ko"','id="main-content"','class="skip-link"','id="track-search"','id="main-player"','id="play-all-button"','id="shuffle-button"','id="playlist-status"','aria-live="polite"']:
         if marker not in html:
             errors.append(f"HTML 접근성 표식 누락: {marker}")
+    javascript=(base/"app.js").read_text(encoding="utf-8")
+    for marker in ['const startPlaylist','const advancePlaylist','addEventListener("ended", advancePlaylist)','playlistQueue','shuffleIds']:
+        if marker not in javascript:
+            errors.append(f"연속 재생 기능 누락: {marker}")
     text_files=[p for p in base.rglob("*") if p.is_file() and p.suffix.lower() in {".html",".css",".js",".json",".webmanifest",".svg",".txt"}]
     public_text="\n".join(p.read_text(encoding="utf-8",errors="ignore") for p in text_files)
     checks=[
