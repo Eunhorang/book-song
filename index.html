@@ -21,7 +21,7 @@
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <link rel="manifest" href="./site.webmanifest">
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css?v=20260810-playing">
   <title>책이 노래가 될 때</title>
 </head>
 <body>
@@ -56,7 +56,7 @@
             랜덤 노래 재생
           </button>
         </div>
-        <p class="playlist-status" id="playlist-status" aria-live="polite">재생 가능한 노래를 확인하는 중입니다.</p>
+        <p class="playlist-status" id="playlist-status" data-playback-state="idle" role="status" aria-live="polite" aria-atomic="true">재생 대기</p>
       </div>
       <nav class="site-nav" aria-label="주요 메뉴">
         <a href="?view=library" data-view-link="library" aria-controls="listen library">음악 보관함</a>
@@ -257,6 +257,6 @@
   </footer>
 
   <noscript>이 웹사이트에서 노래 목록을 살펴보려면 JavaScript를 켜 주세요.</noscript>
-  <script src="./app.js" defer></script>
+  <script src="./app.js?v=20260810-playing" defer></script>
 </body>
 </html>

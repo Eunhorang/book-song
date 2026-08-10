@@ -187,6 +187,13 @@
     return shuffled;
   };
 
+  const setHeaderPlaybackStatus = (label, playbackState = "idle", accessibleLabel = label) => {
+    text(elements.playlistStatus, label);
+    elements.playlistStatus.dataset.playbackState = playbackState;
+    elements.playlistStatus.title = accessibleLabel;
+    elements.playlistStatus.setAttribute("aria-label", accessibleLabel);
+  };
+
   const updatePlaylistControls = (message = "") => {
     const available = mp4Tracks();
     const disabled = available.length === 0;
@@ -198,23 +205,46 @@
     elements.shuffleButton.setAttribute("aria-label", `현재 재생 가능한 보관 음원 ${available.length}곡을 무작위 순서로 재생`);
 
     if (message) {
-      text(elements.playlistStatus, message);
+      setHeaderPlaybackStatus(message, "notice");
       return;
     }
-    if (playlistIsActive()) {
-      const track = state.tracks.find((item) => item.id === state.playlistQueue[state.playlistIndex]);
-      text(
-        elements.playlistStatus,
-        `${playlistLabel()} ${state.playlistIndex + 1}/${state.playlistQueue.length} · 〈${track?.title || "노래"}〉 재생 중`,
+    const track = selectedTrack();
+    if (!track) {
+      setHeaderPlaybackStatus(
+        disabled ? "재생 가능한 노래가 없습니다" : "재생 가능한 노래 확인 중",
+        disabled ? "pending" : "idle",
       );
       return;
     }
-    text(
-      elements.playlistStatus,
-      disabled
-        ? "연속 재생할 보관 음원이 아직 없습니다."
-        : `현재 준비된 보관 음원 ${available.length}곡을 순서대로 또는 무작위로 들을 수 있습니다.`,
-    );
+    const title = `〈${track.title}〉`;
+    const playlistContext = playlistIsActive()
+      ? `${playlistLabel()} ${state.playlistIndex + 1}/${state.playlistQueue.length}. `
+      : "";
+    if (state.mediaMode === "mp4" && !elements.mainPlayer.hidden) {
+      if (!elements.mainPlayer.paused && !elements.mainPlayer.ended) {
+        setHeaderPlaybackStatus(
+          `재생 중 · ${title}`,
+          "playing",
+          `${playlistContext}현재 재생 중인 노래는 ${title}입니다.`,
+        );
+        return;
+      }
+      if (elements.mainPlayer.ended) {
+        setHeaderPlaybackStatus(`재생 완료 · ${title}`, "complete", `${title} 재생이 끝났습니다.`);
+        return;
+      }
+      if (elements.mainPlayer.currentTime > 0) {
+        setHeaderPlaybackStatus(`일시정지 · ${title}`, "paused", `${title} 재생이 일시정지되었습니다.`);
+        return;
+      }
+      setHeaderPlaybackStatus(`재생 대기 · ${title}`, "ready", `재생할 수 있는 노래는 ${title}입니다.`);
+      return;
+    }
+    if (state.mediaMode === "pending") {
+      setHeaderPlaybackStatus(`음원 준비 중 · ${title}`, "pending", `${title} 음원을 준비하고 있습니다.`);
+      return;
+    }
+    setHeaderPlaybackStatus(`재생 대기 · ${title}`, "ready", `선택한 노래는 ${title}입니다.`);
   };
 
   const clearPlaylist = (message = "") => {
@@ -544,13 +574,19 @@
     });
     elements.playAllButton.addEventListener("click", () => startPlaylist("sequential"));
     elements.shuffleButton.addEventListener("click", () => startPlaylist("shuffle"));
-    elements.mainPlayer.addEventListener("ended", advancePlaylist);
-    elements.mainPlayer.addEventListener("play", () => {
-      if (playlistIsActive()) updatePlaylistControls();
+    elements.mainPlayer.addEventListener("ended", () => {
+      updatePlaylistControls();
+      advancePlaylist();
     });
+    elements.mainPlayer.addEventListener("play", () => {
+      updatePlaylistControls();
+    });
+    elements.mainPlayer.addEventListener("playing", () => updatePlaylistControls());
+    elements.mainPlayer.addEventListener("pause", () => updatePlaylistControls());
     elements.mainPlayer.addEventListener("error", () => {
       const shouldAdvance = playlistIsActive();
       showEmptyMedia("음원 파일을 불러오지 못했습니다");
+      updatePlaylistControls(`재생 오류 · 〈${selectedTrack()?.title || "선택한 노래"}〉`);
       if (shouldAdvance) window.setTimeout(advancePlaylist, 0);
     });
     bindViewNavigation();
@@ -567,7 +603,7 @@
     elements.noResults.querySelector("p").textContent = "페이지를 새로고침해 주세요.";
     elements.playAllButton.disabled = true;
     elements.shuffleButton.disabled = true;
-    text(elements.playlistStatus, "노래 목록을 불러온 뒤 연속 재생을 사용할 수 있습니다.");
+    setHeaderPlaybackStatus("노래 목록을 불러오지 못했습니다", "notice");
   };
 
   const init = async () => {

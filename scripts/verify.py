@@ -50,7 +50,7 @@ def main() -> None:
         if youtube and not re.fullmatch(r"https://www\.youtube\.com/watch\?v=[A-Za-z0-9_-]{11}",youtube):
             errors.append(f"{track['id']} YouTube 주소 오류")
     html=(base/"index.html").read_text(encoding="utf-8")
-    for marker in ['lang="ko"','id="main-content"','class="skip-link"','id="track-search"','id="main-player"','class="header-playback"','id="play-all-button"','id="shuffle-button"','id="playlist-status"','id="view-status"','data-view-link="library"','data-view-link="meaning"','data-view-link="about"','data-view-panel="home"','data-view-panel="library"','data-view-panel="meaning"','data-view-panel="about"','aria-live="polite"']:
+    for marker in ['lang="ko"','id="main-content"','class="skip-link"','id="track-search"','id="main-player"','class="header-playback"','id="play-all-button"','id="shuffle-button"','id="playlist-status"','data-playback-state="idle"','id="view-status"','data-view-link="library"','data-view-link="meaning"','data-view-link="about"','data-view-panel="home"','data-view-panel="library"','data-view-panel="meaning"','data-view-panel="about"','aria-live="polite"']:
         if marker not in html:
             errors.append(f"HTML 접근성 표식 누락: {marker}")
     for legacy_anchor in ['href="#library"','href="#interpretation"','href="#about"']:
@@ -61,11 +61,11 @@ def main() -> None:
         if marker not in header or html.count(marker) != 1:
             errors.append(f"상단 고정 재생 메뉴 배치 오류: {marker}")
     stylesheet=(base/"styles.css").read_text(encoding="utf-8")
-    for marker in [".site-header", "position: sticky", ".header-playback"]:
+    for marker in [".site-header", "position: sticky", ".header-playback", '.playlist-status[data-playback-state="playing"]']:
         if marker not in stylesheet:
             errors.append(f"상단 고정 스타일 누락: {marker}")
     javascript=(base/"app.js").read_text(encoding="utf-8")
-    for marker in ['const startPlaylist','const advancePlaylist','addEventListener("ended", advancePlaylist)','playlistQueue','shuffleIds','const setActiveView','addEventListener("popstate"','activeView']:
+    for marker in ['const startPlaylist','const advancePlaylist','playlistQueue','shuffleIds','const setActiveView','addEventListener("popstate"','activeView','const setHeaderPlaybackStatus','현재 재생 중인 노래는','addEventListener("pause"']:
         if marker not in javascript:
             errors.append(f"연속 재생 기능 누락: {marker}")
     text_files=[p for p in base.rglob("*") if p.is_file() and p.suffix.lower() in {".html",".css",".js",".json",".webmanifest",".svg",".txt"}]
