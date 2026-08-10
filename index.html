@@ -29,7 +29,7 @@
 
   <header class="site-header">
     <div class="header-inner">
-      <a class="brand" href="#top" aria-label="책이 노래가 될 때 처음으로">
+      <a class="brand" href="?view=home" data-view-link="home" aria-label="책이 노래가 될 때 처음 화면">
         <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true">
           <path d="M8 12.5c6.4-2.5 11.8-1.4 16 2.2v22.8c-4.2-3.6-9.6-4.7-16-2.2V12.5Z"/>
           <path d="M40 12.5c-6.4-2.5-11.8-1.4-16 2.2v22.8c4.2-3.6 9.6-4.7 16-2.2V12.5Z"/>
@@ -59,15 +59,16 @@
         <p class="playlist-status" id="playlist-status" aria-live="polite">재생 가능한 노래를 확인하는 중입니다.</p>
       </div>
       <nav class="site-nav" aria-label="주요 메뉴">
-        <a href="#library">음악 보관함</a>
-        <a href="#interpretation">가사와 의미</a>
-        <a href="#about">프로젝트 소개</a>
+        <a href="?view=library" data-view-link="library" aria-controls="listen library">음악 보관함</a>
+        <a href="?view=meaning" data-view-link="meaning" aria-controls="interpretation">가사와 의미</a>
+        <a href="?view=about" data-view-link="about" aria-controls="about">프로젝트 소개</a>
       </nav>
     </div>
   </header>
 
   <main id="main-content">
-    <section class="hero" id="top" aria-labelledby="hero-title">
+    <p class="visually-hidden" id="view-status" aria-live="polite"></p>
+    <section class="hero view-panel" id="top" data-view-panel="home" aria-labelledby="hero-title">
       <div class="hero-inner">
         <div class="hero-copy">
           <p class="eyebrow">BOOKS INTO SONGS</p>
@@ -78,7 +79,7 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z"/></svg>
               첫 번째 노래 만나기
             </button>
-            <a class="button button-secondary" href="#library">전체 노래 보기</a>
+            <a class="button button-secondary" href="?view=library" data-view-link="library">전체 노래 보기</a>
           </div>
           <dl class="hero-stats" aria-label="아카이브 현황">
             <div><dt id="song-count">0</dt><dd>노래</dd></div>
@@ -105,7 +106,7 @@
       </div>
     </section>
 
-    <section class="now-playing section-shell" id="listen" aria-labelledby="player-heading">
+    <section class="now-playing section-shell view-panel" id="listen" data-view-panel="library" aria-labelledby="player-heading" hidden>
       <div class="section-heading compact">
         <div>
           <p class="eyebrow">NOW SELECTED</p>
@@ -153,7 +154,7 @@
       </div>
     </section>
 
-    <section class="library section-shell" id="library" aria-labelledby="library-heading">
+    <section class="library section-shell view-panel" id="library" data-view-panel="library" aria-labelledby="library-heading" hidden>
       <div class="section-heading">
         <div>
           <p class="eyebrow">MUSIC LIBRARY</p>
@@ -188,7 +189,7 @@
       </div>
     </section>
 
-    <section class="interpretation section-shell" id="interpretation" aria-labelledby="interpretation-heading">
+    <section class="interpretation section-shell view-panel" id="interpretation" data-view-panel="meaning" aria-labelledby="interpretation-heading" hidden>
       <div class="section-heading">
         <div>
           <p class="eyebrow">LYRICS &amp; MEANING</p>
@@ -229,7 +230,7 @@
       </div>
     </section>
 
-    <section class="about section-shell" id="about" aria-labelledby="about-heading">
+    <section class="about section-shell view-panel" id="about" data-view-panel="about" aria-labelledby="about-heading" hidden>
       <div class="about-card">
         <div class="about-copy">
           <p class="eyebrow">ABOUT THE PROJECT</p>

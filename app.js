@@ -11,6 +11,14 @@
     playlistMode: null,
     playlistQueue: [],
     playlistIndex: -1,
+    activeView: "home",
+  };
+
+  const VIEW_LABELS = {
+    home: "처음",
+    library: "음악 보관함",
+    meaning: "가사와 의미",
+    about: "프로젝트 소개",
   };
 
   const elements = {
@@ -52,6 +60,9 @@
     detailEnding: document.querySelector("#detail-ending"),
     tabs: Array.from(document.querySelectorAll('[role="tab"]')),
     panels: Array.from(document.querySelectorAll('[role="tabpanel"]')),
+    viewStatus: document.querySelector("#view-status"),
+    viewLinks: Array.from(document.querySelectorAll("[data-view-link]")),
+    viewPanels: Array.from(document.querySelectorAll("[data-view-panel]")),
   };
 
   const text = (element, value) => {
@@ -59,6 +70,85 @@
   };
 
   const selectedTrack = () => state.tracks.find((track) => track.id === state.selectedId);
+
+  const normalizeView = (value) => (Object.hasOwn(VIEW_LABELS, value) ? value : "home");
+
+  const viewFromLocation = () => {
+    const url = new URL(window.location.href);
+    const requested = url.searchParams.get("view");
+    if (requested && Object.hasOwn(VIEW_LABELS, requested)) return requested;
+    const legacyViews = {
+      "#library": "library",
+      "#listen": "library",
+      "#interpretation": "meaning",
+      "#about": "about",
+      "#top": "home",
+    };
+    if (legacyViews[url.hash]) return legacyViews[url.hash];
+    return url.searchParams.has("track") ? "library" : "home";
+  };
+
+  const updateDocumentTitle = () => {
+    const track = selectedTrack();
+    if (state.activeView === "library") {
+      document.title = "음악 보관함 | 책이 노래가 될 때";
+      return;
+    }
+    if (state.activeView === "meaning") {
+      document.title = `${track ? `${track.title} · ` : ""}가사와 의미 | 책이 노래가 될 때`;
+      return;
+    }
+    if (state.activeView === "about") {
+      document.title = "프로젝트 소개 | 책이 노래가 될 때";
+      return;
+    }
+    document.title = "책이 노래가 될 때";
+  };
+
+  const updateViewUrl = (view, mode) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("view", view);
+    url.hash = "";
+    window.history[mode === "push" ? "pushState" : "replaceState"]({ view }, "", url);
+  };
+
+  const focusViewHeading = (view) => {
+    const panel = elements.viewPanels.find((item) => item.dataset.viewPanel === view && !item.hidden);
+    const heading = panel?.querySelector("h1, h2");
+    if (!heading) return;
+    heading.tabIndex = -1;
+    heading.focus({ preventScroll: true });
+    heading.addEventListener("blur", () => heading.removeAttribute("tabindex"), { once: true });
+  };
+
+  const setActiveView = (value, options = {}) => {
+    const view = normalizeView(value);
+    state.activeView = view;
+    document.body.dataset.view = view;
+    for (const panel of elements.viewPanels) panel.hidden = panel.dataset.viewPanel !== view;
+    for (const link of elements.viewLinks) {
+      if (link.dataset.viewLink === view) link.setAttribute("aria-current", "page");
+      else link.removeAttribute("aria-current");
+    }
+    if (options.historyMode) updateViewUrl(view, options.historyMode);
+    updateDocumentTitle();
+    if (options.announce !== false) text(elements.viewStatus, `${VIEW_LABELS[view]} 화면을 열었습니다.`);
+    if (options.resetScroll !== false) window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    if (options.focus) window.requestAnimationFrame(() => focusViewHeading(view));
+  };
+
+  const bindViewNavigation = () => {
+    for (const link of elements.viewLinks) {
+      link.addEventListener("click", (event) => {
+        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        setActiveView(link.dataset.viewLink, { historyMode: "push", focus: true });
+      });
+    }
+    window.addEventListener("popstate", () => {
+      setActiveView(viewFromLocation(), { focus: true });
+    });
+  };
 
   const mediaFor = (trackId) => {
     const item = state.media[trackId] || {};
@@ -367,7 +457,7 @@
     renderDetails(track);
     renderLibrary();
     updatePlaylistControls();
-    document.title = `${track.title} | 책이 노래가 될 때`;
+    updateDocumentTitle();
     if (options.updateUrl) updateUrl(track.id);
   };
 
@@ -450,7 +540,7 @@
     elements.heroListen.addEventListener("click", () => {
       const firstAvailable = state.tracks.find((track) => mediaStatus(track.id).key !== "pending") || state.tracks[0];
       if (firstAvailable) selectTrack(firstAvailable.id, { updateUrl: true });
-      document.querySelector("#listen").scrollIntoView({ behavior: "smooth", block: "start" });
+      setActiveView("library", { historyMode: "push", focus: true });
     });
     elements.playAllButton.addEventListener("click", () => startPlaylist("sequential"));
     elements.shuffleButton.addEventListener("click", () => startPlaylist("shuffle"));
@@ -463,6 +553,7 @@
       showEmptyMedia("음원 파일을 불러오지 못했습니다");
       if (shouldAdvance) window.setTimeout(advancePlaylist, 0);
     });
+    bindViewNavigation();
     bindTabs();
   };
 
@@ -481,6 +572,7 @@
 
   const init = async () => {
     window.__BOOK_SONG_READY__ = false;
+    setActiveView(viewFromLocation(), { historyMode: "replace", resetScroll: false, announce: false });
     bindControls();
     try {
       const [tracksResponse, mediaResponse] = await Promise.all([
@@ -504,10 +596,12 @@
           playlistQueue: [...state.playlistQueue],
           playlistIndex: state.playlistIndex,
           playableIds: mp4Tracks().map((track) => track.id),
+          activeView: state.activeView,
         }),
         parseYoutubeId,
         selectTrack: (id) => selectTrack(String(id).padStart(2, "0"), { updateUrl: false }),
         startPlaylist,
+        setView: (view) => setActiveView(view, { resetScroll: false, announce: false }),
       };
     } catch (error) {
       console.error("노래 데이터를 불러오지 못했습니다.", error);
