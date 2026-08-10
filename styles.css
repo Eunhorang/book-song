@@ -292,6 +292,55 @@ svg {
   opacity: 0.5;
 }
 
+.playback-toggle-button {
+  min-width: 104px;
+  min-height: 44px;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: var(--ink);
+  background: rgba(255, 253, 249, 0.9);
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  font-size: 0.78rem;
+  font-weight: 760;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.playback-toggle-button svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.9;
+}
+
+.playback-toggle-button[data-action="pause"] {
+  color: var(--accent-deep);
+  background: color-mix(in srgb, var(--accent-soft) 72%, white);
+  border-color: color-mix(in srgb, var(--accent) 54%, var(--line));
+  box-shadow: 0 5px 14px rgba(121, 57, 33, 0.1);
+}
+
+.playback-toggle-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.46;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .playback-toggle-button:hover:not(:disabled) {
+    border-color: var(--accent);
+    box-shadow: 0 5px 14px rgba(52, 41, 28, 0.09);
+  }
+}
+
 .playlist-status {
   position: relative;
   width: clamp(240px, 24vw, 340px);
@@ -1416,6 +1465,16 @@ noscript {
     font-size: 0.68rem;
   }
 
+  .playback-toggle-button {
+    width: 44px;
+    min-width: 44px;
+    padding: 0;
+  }
+
+  .playback-toggle-label {
+    display: none;
+  }
+
   .site-nav {
     gap: 3px;
   }
@@ -1464,6 +1523,16 @@ noscript {
     min-height: 44px;
     display: inline-flex;
     align-items: center;
+  }
+
+  .playback-toggle-button {
+    width: 44px;
+    min-width: 44px;
+    padding: 0;
+  }
+
+  .playback-toggle-label {
+    display: none;
   }
 
   .hero-inner {
@@ -1548,7 +1617,7 @@ noscript {
   .header-playback {
     width: 100%;
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr) 44px;
     align-items: stretch;
     gap: 8px;
   }
@@ -1583,6 +1652,12 @@ noscript {
 
   .header-playback .playlist-status::before {
     left: 10px;
+  }
+
+  .playback-toggle-button {
+    align-self: center;
+    justify-self: end;
+    box-shadow: none;
   }
 
   .hero {
@@ -1753,8 +1828,12 @@ noscript {
   }
 
   .header-playback {
-    grid-template-columns: minmax(128px, auto) minmax(0, 1fr);
+    grid-template-columns: minmax(104px, auto) minmax(0, 1fr) 44px;
     gap: 6px;
+  }
+
+  .random-label-optional {
+    display: none;
   }
 
   .playlist-button {

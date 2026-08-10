@@ -43,6 +43,10 @@
     mediaEmpty: document.querySelector("#media-empty"),
     shuffleButton: document.querySelector("#shuffle-button"),
     playlistStatus: document.querySelector("#playlist-status"),
+    playbackToggleButton: document.querySelector("#playback-toggle-button"),
+    playbackToggleLabel: document.querySelector("#playback-toggle-label"),
+    playbackPauseIcon: document.querySelector('[data-playback-icon="pause"]'),
+    playbackPlayIcon: document.querySelector('[data-playback-icon="play"]'),
     trackSearch: document.querySelector("#track-search"),
     statusFilter: document.querySelector("#status-filter"),
     trackGrid: document.querySelector("#track-grid"),
@@ -193,12 +197,50 @@
     elements.playlistStatus.setAttribute("aria-label", accessibleLabel);
   };
 
+  const setPlaybackToggle = (action, visibleLabel, accessibleLabel, disabled = false) => {
+    elements.playbackToggleButton.dataset.action = action;
+    elements.playbackToggleButton.disabled = disabled;
+    elements.playbackToggleButton.setAttribute("aria-label", accessibleLabel);
+    elements.playbackToggleButton.title = accessibleLabel;
+    text(elements.playbackToggleLabel, visibleLabel);
+    elements.playbackPauseIcon.toggleAttribute("hidden", action !== "pause");
+    elements.playbackPlayIcon.toggleAttribute("hidden", action === "pause");
+  };
+
+  const updatePlaybackToggle = () => {
+    const track = selectedTrack();
+    const controllable =
+      track &&
+      state.mediaMode === "mp4" &&
+      !elements.mainPlayer.hidden &&
+      Boolean(elements.mainPlayer.getAttribute("src"));
+    if (!controllable) {
+      setPlaybackToggle("unavailable", "재생 제어", "재생할 수 있는 보관 음원이 선택되지 않았습니다", true);
+      return;
+    }
+    const title = `〈${track.title}〉`;
+    if (!elements.mainPlayer.paused && !elements.mainPlayer.ended) {
+      setPlaybackToggle("pause", "일시정지", `${title} 일시정지`);
+      return;
+    }
+    if (elements.mainPlayer.ended) {
+      setPlaybackToggle("replay", "다시 재생", `${title} 처음부터 다시 재생`);
+      return;
+    }
+    if (elements.mainPlayer.currentTime > 0) {
+      setPlaybackToggle("resume", "이어 재생", `${title} 이어서 재생`);
+      return;
+    }
+    setPlaybackToggle("play", "재생", `${title} 재생`);
+  };
+
   const updatePlaylistControls = (message = "") => {
     const available = mp4Tracks();
     const disabled = available.length === 0;
     elements.shuffleButton.disabled = disabled;
     elements.shuffleButton.setAttribute("aria-pressed", state.playlistMode === "shuffle" ? "true" : "false");
     elements.shuffleButton.setAttribute("aria-label", `현재 재생 가능한 보관 음원 ${available.length}곡을 중복 없이 무작위 순서로 재생`);
+    updatePlaybackToggle();
 
     if (message) {
       setHeaderPlaybackStatus(message, "notice");
@@ -427,6 +469,7 @@
         state.mediaMode = option.key;
         renderSourceSwitch(track);
         renderMediaMode();
+        updatePlaylistControls();
       });
       elements.sourceSwitch.append(button);
     }
@@ -573,6 +616,18 @@
       setActiveView("library", { historyMode: "push", focus: true });
     });
     elements.shuffleButton.addEventListener("click", () => startPlaylist("shuffle"));
+    elements.playbackToggleButton.addEventListener("click", () => {
+      if (elements.playbackToggleButton.disabled || state.mediaMode !== "mp4" || elements.mainPlayer.hidden) return;
+      if (!elements.mainPlayer.paused && !elements.mainPlayer.ended) {
+        elements.mainPlayer.pause();
+        return;
+      }
+      if (elements.mainPlayer.ended) elements.mainPlayer.currentTime = 0;
+      const playback = elements.mainPlayer.play();
+      if (playback && typeof playback.catch === "function") {
+        playback.catch(() => updatePlaylistControls("재생을 시작하지 못했습니다. 영상의 재생 버튼을 눌러 주세요."));
+      }
+    });
     elements.mainPlayer.addEventListener("ended", () => {
       updatePlaylistControls();
       advancePlaylist();
@@ -601,6 +656,7 @@
     elements.noResults.querySelector("strong").textContent = "노래 목록을 불러오지 못했습니다.";
     elements.noResults.querySelector("p").textContent = "페이지를 새로고침해 주세요.";
     elements.shuffleButton.disabled = true;
+    setPlaybackToggle("unavailable", "재생 제어", "노래 목록을 불러오지 못해 재생할 수 없습니다", true);
     setHeaderPlaybackStatus("노래 목록을 불러오지 못했습니다", "notice");
   };
 

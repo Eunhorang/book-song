@@ -21,7 +21,7 @@
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <link rel="manifest" href="./site.webmanifest">
-  <link rel="stylesheet" href="./styles.css?v=20260810-random-ui">
+  <link rel="stylesheet" href="./styles.css?v=20260810-pause-control2">
   <title>책이 노래가 될 때</title>
 </head>
 <body>
@@ -40,16 +40,25 @@
           <small>이정주의 사유음악실</small>
         </span>
       </a>
-      <div class="header-playback" role="group" aria-label="상단 랜덤 재생 메뉴">
+      <div class="header-playback" role="group" aria-label="상단 노래 재생 메뉴">
         <div class="playlist-buttons">
           <button class="playlist-button" id="shuffle-button" type="button" aria-pressed="false" disabled>
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M4 7h2.5c5 0 6 10 10.5 10H20M17 14l3 3-3 3M4 17h2.5c2.2 0 3.5-2 4.7-4.2M17 4l3 3-3 3"/>
             </svg>
-            랜덤 노래 재생
+            랜덤 <span class="random-label-optional">노래 </span>재생
           </button>
         </div>
         <p class="playlist-status" id="playlist-status" data-playback-state="idle" role="status" aria-live="polite" aria-atomic="true">재생 대기</p>
+        <button class="playback-toggle-button" id="playback-toggle-button" type="button" data-action="unavailable" aria-controls="main-player" aria-label="재생할 노래가 없습니다" disabled>
+          <svg data-playback-icon="pause" viewBox="0 0 24 24" aria-hidden="true" hidden>
+            <path d="M8 5v14M16 5v14"/>
+          </svg>
+          <svg data-playback-icon="play" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m8 5 11 7-11 7V5Z"/>
+          </svg>
+          <span class="playback-toggle-label" id="playback-toggle-label">재생 제어</span>
+        </button>
       </div>
       <nav class="site-nav" aria-label="주요 메뉴">
         <a href="?view=library" data-view-link="library" aria-controls="listen library">음악 보관함</a>
@@ -250,6 +259,6 @@
   </footer>
 
   <noscript>이 웹사이트에서 노래 목록을 살펴보려면 JavaScript를 켜 주세요.</noscript>
-  <script src="./app.js?v=20260810-random-ui" defer></script>
+  <script src="./app.js?v=20260810-pause-control2" defer></script>
 </body>
 </html>
