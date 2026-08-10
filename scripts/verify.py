@@ -50,9 +50,17 @@ def main() -> None:
         if youtube and not re.fullmatch(r"https://www\.youtube\.com/watch\?v=[A-Za-z0-9_-]{11}",youtube):
             errors.append(f"{track['id']} YouTube 주소 오류")
     html=(base/"index.html").read_text(encoding="utf-8")
-    for marker in ['lang="ko"','id="main-content"','class="skip-link"','id="track-search"','id="main-player"','id="play-all-button"','id="shuffle-button"','id="playlist-status"','aria-live="polite"']:
+    for marker in ['lang="ko"','id="main-content"','class="skip-link"','id="track-search"','id="main-player"','class="header-playback"','id="play-all-button"','id="shuffle-button"','id="playlist-status"','aria-live="polite"']:
         if marker not in html:
             errors.append(f"HTML 접근성 표식 누락: {marker}")
+    header=html.partition("</header>")[0]
+    for marker in ['id="play-all-button"','id="shuffle-button"','id="playlist-status"']:
+        if marker not in header or html.count(marker) != 1:
+            errors.append(f"상단 고정 재생 메뉴 배치 오류: {marker}")
+    stylesheet=(base/"styles.css").read_text(encoding="utf-8")
+    for marker in [".site-header", "position: sticky", ".header-playback"]:
+        if marker not in stylesheet:
+            errors.append(f"상단 고정 스타일 누락: {marker}")
     javascript=(base/"app.js").read_text(encoding="utf-8")
     for marker in ['const startPlaylist','const advancePlaylist','addEventListener("ended", advancePlaylist)','playlistQueue','shuffleIds']:
         if marker not in javascript:

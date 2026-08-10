@@ -40,6 +40,24 @@
           <small>이정주의 사유음악실</small>
         </span>
       </a>
+      <div class="header-playback" role="group" aria-label="상단 고정 재생 메뉴">
+        <div class="playlist-buttons">
+          <button class="playlist-button" id="play-all-button" type="button" aria-pressed="false" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6h8M4 12h8M4 18h8"/>
+              <path d="m16 8 4 4-4 4V8Z"/>
+            </svg>
+            모든 노래 재생
+          </button>
+          <button class="playlist-button" id="shuffle-button" type="button" aria-pressed="false" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 7h2.5c5 0 6 10 10.5 10H20M17 14l3 3-3 3M4 17h2.5c2.2 0 3.5-2 4.7-4.2M17 4l3 3-3 3"/>
+            </svg>
+            랜덤 노래 재생
+          </button>
+        </div>
+        <p class="playlist-status" id="playlist-status" aria-live="polite">재생 가능한 노래를 확인하는 중입니다.</p>
+      </div>
       <nav class="site-nav" aria-label="주요 메뉴">
         <a href="#library">음악 보관함</a>
         <a href="#interpretation">가사와 의미</a>
@@ -113,25 +131,6 @@
           <h3 id="player-title">노래를 불러오는 중입니다</h3>
           <p class="book-line" id="player-book"></p>
           <p class="track-message" id="player-message"></p>
-
-          <div class="playlist-controls" aria-label="연속 재생">
-            <div class="playlist-buttons">
-              <button class="playlist-button" id="play-all-button" type="button" aria-pressed="false" disabled>
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M4 6h8M4 12h8M4 18h8"/>
-                  <path d="m16 8 4 4-4 4V8Z"/>
-                </svg>
-                모든 노래 재생
-              </button>
-              <button class="playlist-button" id="shuffle-button" type="button" aria-pressed="false" disabled>
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M4 7h2.5c5 0 6 10 10.5 10H20M17 14l3 3-3 3M4 17h2.5c2.2 0 3.5-2 4.7-4.2M17 4l3 3-3 3"/>
-                </svg>
-                랜덤 재생
-              </button>
-            </div>
-            <p class="playlist-status" id="playlist-status" aria-live="polite">재생 가능한 노래를 확인하는 중입니다.</p>
-          </div>
 
           <div class="source-switch" id="source-switch" aria-label="재생 방법" hidden></div>
 

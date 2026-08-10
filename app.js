@@ -83,7 +83,7 @@
     state.playlistIndex >= 0 &&
     state.playlistIndex < state.playlistQueue.length;
 
-  const playlistLabel = () => (state.playlistMode === "shuffle" ? "랜덤 재생" : "모든 노래 재생");
+  const playlistLabel = () => (state.playlistMode === "shuffle" ? "랜덤 노래 재생" : "모든 노래 재생");
 
   const shuffleIds = (ids) => {
     const shuffled = [...ids];
