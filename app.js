@@ -30,6 +30,7 @@
   const playCountFormatter = new Intl.NumberFormat("ko-KR");
   let playbackQualification = null;
   let shareStatusTimer = null;
+  let shareInProgress = false;
 
   const elements = {
     siteHeader: document.querySelector(".site-header"),
@@ -141,6 +142,7 @@
     for (const button of elements.shareButtons) {
       button.disabled = !track;
       button.removeAttribute("aria-busy");
+      button.removeAttribute("aria-disabled");
       if (!track) {
         button.setAttribute("aria-label", "이 노래 공유하기");
         button.removeAttribute("title");
@@ -192,10 +194,11 @@
 
   const shareSelectedTrack = async () => {
     const track = selectedTrack();
-    if (!track) return;
+    if (!track || shareInProgress) return;
+    shareInProgress = true;
     const payload = sharePayloadForTrack(track);
     for (const button of elements.shareButtons) {
-      button.disabled = true;
+      button.setAttribute("aria-disabled", "true");
       button.setAttribute("aria-busy", "true");
     }
     try {
@@ -216,6 +219,7 @@
     } catch (error) {
       showShareStatus("링크를 복사하지 못했습니다. 주소 표시줄의 링크를 복사해 주세요.");
     } finally {
+      shareInProgress = false;
       updateShareButtons(selectedTrack());
     }
   };

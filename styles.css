@@ -955,7 +955,8 @@ svg {
   stroke-width: 1.8;
 }
 
-.track-share-button:disabled {
+.track-share-button:disabled,
+.track-share-button[aria-disabled="true"] {
   opacity: 0.55;
   cursor: wait;
 }
