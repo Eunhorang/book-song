@@ -11,6 +11,7 @@
     playlistMode: null,
     playlistQueue: [],
     playlistIndex: -1,
+    repeatOne: false,
     activeView: "home",
     playCounts: {},
     playCountsStatus: "loading",
@@ -55,6 +56,7 @@
     youtubeStage: document.querySelector("#youtube-stage"),
     mediaEmpty: document.querySelector("#media-empty"),
     shuffleButton: document.querySelector("#shuffle-button"),
+    repeatOneButton: document.querySelector("#repeat-one-button"),
     playlistStatus: document.querySelector("#playlist-status"),
     playbackToggleButton: document.querySelector("#playback-toggle-button"),
     playbackToggleLabel: document.querySelector("#playback-toggle-label"),
@@ -310,10 +312,12 @@
 
   const qualificationFor = (player) => {
     const restartAfterCount =
+      !state.repeatOne &&
       playbackQualification?.counted &&
       playbackQualification.trackId === state.selectedId &&
       playbackQualification.player === player &&
-      player.currentTime < 1;
+      player.currentTime < 1 &&
+      playbackQualification.lastMediaTime > player.currentTime + 1;
     if (
       !playbackQualification ||
       playbackQualification.trackId !== state.selectedId ||
@@ -384,6 +388,23 @@
     state.playlistIndex >= 0 &&
     state.playlistIndex < state.playlistQueue.length;
 
+  const syncRepeatOneToPlayers = () => {
+    const activePlayer = activeLocalPlayer();
+    for (const player of [elements.mainPlayer, elements.videoPlayer]) {
+      player.loop = Boolean(
+        state.repeatOne &&
+        player === activePlayer &&
+        !player.hidden &&
+        player.hasAttribute("src"),
+      );
+    }
+  };
+
+  const setRepeatOneState = (enabled) => {
+    state.repeatOne = Boolean(enabled);
+    syncRepeatOneToPlayers();
+  };
+
   const playlistLabel = () => (state.playlistMode === "shuffle" ? "랜덤 노래 재생" : "연속 재생");
 
   const shuffleIds = (ids) => {
@@ -439,12 +460,27 @@
     setPlaybackToggle("play", "재생", `${title} 재생`);
   };
 
+  const updateRepeatOneButton = () => {
+    const track = selectedTrack();
+    const player = activeLocalPlayer();
+    const controllable = track && player && !player.hidden && Boolean(player.getAttribute("src"));
+    const pressed = state.repeatOne;
+    elements.repeatOneButton.disabled = !controllable;
+    elements.repeatOneButton.setAttribute("aria-pressed", pressed ? "true" : "false");
+    const label = controllable
+      ? `〈${track.title}〉 한 곡 반복 ${pressed ? "끄기" : "켜기"}`
+      : "반복할 수 있는 보관 음원이 선택되지 않았습니다";
+    elements.repeatOneButton.setAttribute("aria-label", label);
+    elements.repeatOneButton.title = label;
+  };
+
   const updatePlaylistControls = (message = "") => {
     const available = audioTracks();
     const disabled = available.length === 0;
     elements.shuffleButton.disabled = disabled;
     elements.shuffleButton.setAttribute("aria-pressed", state.playlistMode === "shuffle" ? "true" : "false");
     elements.shuffleButton.setAttribute("aria-label", `현재 재생 가능한 보관 음원 ${available.length}곡을 중복 없이 무작위 순서로 재생`);
+    updateRepeatOneButton();
     updatePlaybackToggle();
 
     if (message) {
@@ -463,6 +499,7 @@
     const playlistContext = playlistIsActive()
       ? `${playlistLabel()} ${state.playlistIndex + 1}/${state.playlistQueue.length}. `
       : "";
+    const repeatContext = state.repeatOne ? "한 곡 반복 켜짐. " : "";
     if (mediaStatus(track.id).key === "pending") {
       setHeaderPlaybackStatus(`음원 준비 중 · ${title}`, "pending", `${title} 음원을 준비하고 있습니다.`);
       return;
@@ -473,19 +510,19 @@
         setHeaderPlaybackStatus(
           `재생 중 · ${title}`,
           "playing",
-          `${playlistContext}현재 재생 중인 노래는 ${title}입니다.`,
+          `${playlistContext}${repeatContext}현재 재생 중인 노래는 ${title}입니다.`,
         );
         return;
       }
       if (localPlayer.ended) {
-        setHeaderPlaybackStatus(`재생 완료 · ${title}`, "complete", `${title} 재생이 끝났습니다.`);
+        setHeaderPlaybackStatus(`재생 완료 · ${title}`, "complete", `${repeatContext}${title} 재생이 끝났습니다.`);
         return;
       }
       if (localPlayer.currentTime > 0) {
-        setHeaderPlaybackStatus(`일시정지 · ${title}`, "paused", `${title} 재생이 일시정지되었습니다.`);
+        setHeaderPlaybackStatus(`일시정지 · ${title}`, "paused", `${repeatContext}${title} 재생이 일시정지되었습니다.`);
         return;
       }
-      setHeaderPlaybackStatus(`재생 대기 · ${title}`, "ready", `재생할 수 있는 노래는 ${title}입니다.`);
+      setHeaderPlaybackStatus(`재생 대기 · ${title}`, "ready", `${repeatContext}재생할 수 있는 노래는 ${title}입니다.`);
       return;
     }
     if (state.mediaMode === "pending") {
@@ -602,6 +639,7 @@
 
   const resetPlayer = (player) => {
     player.pause();
+    player.loop = false;
     player.removeAttribute("src");
     player.load();
     player.hidden = true;
@@ -635,6 +673,7 @@
     elements.mainPlayer.hidden = false;
     elements.mediaStage.dataset.mediaKind = "audio";
     elements.mainPlayer.load();
+    syncRepeatOneToPlayers();
   };
 
   const renderVideo = (path) => {
@@ -647,6 +686,7 @@
     elements.videoPlayer.hidden = false;
     elements.mediaStage.dataset.mediaKind = "video";
     elements.videoPlayer.load();
+    syncRepeatOneToPlayers();
   };
 
   const renderYoutube = (url, track) => {
@@ -707,6 +747,7 @@
         if (playlistIsActive() && option.key !== "audio") {
           clearPlaylist("영상 재생을 선택하여 랜덤 재생을 종료했습니다.");
         }
+        if (state.repeatOne && !["audio", "video"].includes(option.key)) setRepeatOneState(false);
         resetPlaybackQualification();
         state.mediaMode = option.key;
         renderSourceSwitch(track);
@@ -769,6 +810,7 @@
     text(elements.playerHook, track.hook);
     text(elements.selectionStatus, `선택한 곡은 〈${track.title}〉입니다.`);
     renderSourceSwitch(track);
+    if (state.repeatOne && !["audio", "video"].includes(state.mediaMode)) setRepeatOneState(false);
     renderDetails(track);
     renderLibrary();
     updatePlayCountViews();
@@ -811,6 +853,7 @@
       clearPlaylist("연속 재생할 보관 음원이 아직 없습니다.");
       return;
     }
+    setRepeatOneState(false);
     state.playlistMode = mode;
     state.playlistQueue = mode === "shuffle" ? shuffleIds(ids) : ids;
     state.playlistIndex = 0;
@@ -864,6 +907,20 @@
       setActiveView("library", { historyMode: "push", focus: true });
     });
     elements.shuffleButton.addEventListener("click", () => startPlaylist("shuffle"));
+    elements.repeatOneButton.addEventListener("click", () => {
+      if (elements.repeatOneButton.disabled) return;
+      const next = !state.repeatOne;
+      if (next) {
+        state.playlistMode = null;
+        state.playlistQueue = [];
+        state.playlistIndex = -1;
+        if (activeLocalPlayer()?.ended) resetPlaybackQualification();
+      }
+      setRepeatOneState(next);
+      const title = selectedTrack()?.title || "선택한 노래";
+      text(elements.viewStatus, `〈${title}〉 한 곡 반복을 ${next ? "켰습니다" : "껐습니다"}.`);
+      updatePlaylistControls();
+    });
     elements.playbackToggleButton.addEventListener("click", () => {
       const player = activeLocalPlayer();
       if (elements.playbackToggleButton.disabled || !player || player.hidden) return;
@@ -871,7 +928,10 @@
         player.pause();
         return;
       }
-      if (player.ended) player.currentTime = 0;
+      if (player.ended) {
+        resetPlaybackQualification();
+        player.currentTime = 0;
+      }
       const playback = player.play();
       if (playback && typeof playback.catch === "function") {
         playback.catch(() => updatePlaylistControls("재생을 시작하지 못했습니다. 플레이어의 재생 버튼을 눌러 주세요."));
@@ -881,7 +941,7 @@
     const bindLocalPlayer = (player, mode) => {
       player.addEventListener("ended", () => {
         updatePlaylistControls();
-        if (mode === "audio") advancePlaylist();
+        if (mode === "audio" && !state.repeatOne) advancePlaylist();
       });
       player.addEventListener("play", () => {
         const session = qualificationFor(player);
@@ -933,6 +993,7 @@
     elements.noResults.querySelector("strong").textContent = "노래 목록을 불러오지 못했습니다.";
     elements.noResults.querySelector("p").textContent = "페이지를 새로고침해 주세요.";
     elements.shuffleButton.disabled = true;
+    elements.repeatOneButton.disabled = true;
     setPlaybackToggle("unavailable", "재생 제어", "노래 목록을 불러오지 못해 재생할 수 없습니다", true);
     setHeaderPlaybackStatus("노래 목록을 불러오지 못했습니다", "notice");
   };
@@ -963,6 +1024,7 @@
           playlistMode: state.playlistMode,
           playlistQueue: [...state.playlistQueue],
           playlistIndex: state.playlistIndex,
+          repeatOne: state.repeatOne,
           playableIds: audioTracks().map((track) => track.id),
           activeView: state.activeView,
           playCounts: { ...state.playCounts },
