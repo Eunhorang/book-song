@@ -24,7 +24,7 @@
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <link rel="manifest" href="./site.webmanifest">
   <link rel="preload" href="./fonts/PretendardVariable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="./styles.css?v=20260811-repeat1">
+  <link rel="stylesheet" href="./styles.css?v=20260811-a11y1">
   <title>책이 노래가 될 때</title>
 </head>
 <body>
@@ -32,7 +32,7 @@
 
   <header class="site-header" data-condensed="false">
     <div class="header-inner">
-      <a class="brand" href="?view=home" data-view-link="home" aria-label="책이 노래가 될 때 처음 화면">
+      <a class="brand" href="?view=home" data-view-link="home">
         <img class="brand-mark" src="./assets/brand-symbol.png" width="512" height="512" alt="" decoding="async">
         <span>
           <strong>책이 노래가 될 때</strong>
@@ -45,7 +45,7 @@
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M4 7h2.5c5 0 6 10 10.5 10H20M17 14l3 3-3 3M4 17h2.5c2.2 0 3.5-2 4.7-4.2M17 4l3 3-3 3"/>
             </svg>
-            랜덤 <span class="random-label-optional">노래 </span>재생
+            랜덤 재생
           </button>
           <button class="playlist-button repeat-one-button" id="repeat-one-button" type="button" aria-controls="main-player video-player" aria-pressed="false" aria-label="한 곡 반복 켜기" title="한 곡 반복 켜기" disabled>
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -285,6 +285,6 @@
   </footer>
 
   <noscript>이 웹사이트에서 노래 목록을 살펴보려면 JavaScript를 켜 주세요.</noscript>
-  <script src="./app.js?v=20260811-repeat1" defer></script>
+  <script src="./app.js?v=20260811-a11y1" defer></script>
 </body>
 </html>

@@ -1071,7 +1071,7 @@ svg {
 }
 
 .track-card-number {
-  color: var(--card-accent);
+  color: color-mix(in srgb, var(--card-accent) 94%, var(--ink));
   font-size: 0.82rem;
   font-weight: 820;
   letter-spacing: 0.1em;
@@ -1079,7 +1079,7 @@ svg {
 
 .card-status {
   padding: 4px 8px;
-  color: color-mix(in srgb, var(--card-accent) 88%, #111);
+  color: color-mix(in srgb, var(--card-accent) 84%, #111);
   background: var(--card-soft);
   border-radius: 999px;
   font-size: 0.7rem;
@@ -1137,7 +1137,7 @@ svg {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  color: var(--card-accent);
+  color: color-mix(in srgb, var(--card-accent) 94%, var(--ink));
   font-size: 0.79rem;
   font-weight: 750;
 }
@@ -1897,10 +1897,6 @@ noscript {
   .header-playback {
     grid-template-columns: auto minmax(0, 1fr) 44px;
     gap: 6px;
-  }
-
-  .random-label-optional {
-    display: none;
   }
 
   .playlist-button {

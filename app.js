@@ -107,9 +107,6 @@
     return `누적 재생 ${playCountFormatter.format(value)}회`;
   };
 
-  const cardAccessibleLabel = (track) =>
-    `${track.title}, ${track.author} ${track.book}, ${uploadedLabel(track)}, ${playCountLabel(track.id)}, 선택하기`;
-
   const updatePlayCountViews = () => {
     const track = selectedTrack();
     if (track) {
@@ -123,9 +120,11 @@
       if (!cardTrack) continue;
       const count = card.querySelector("[data-play-count]");
       if (count) text(count, playCountLabel(cardTrack.id));
-      card.setAttribute("aria-label", cardAccessibleLabel(cardTrack));
     }
   };
+
+  const normalizeRequestedTrackId = (value) =>
+    typeof value === "string" && /^\d{1,2}$/.test(value) ? value.padStart(2, "0") : value;
 
   const normalizeView = (value) => (Object.hasOwn(VIEW_LABELS, value) ? value : "home");
 
@@ -479,7 +478,7 @@
     const disabled = available.length === 0;
     elements.shuffleButton.disabled = disabled;
     elements.shuffleButton.setAttribute("aria-pressed", state.playlistMode === "shuffle" ? "true" : "false");
-    elements.shuffleButton.setAttribute("aria-label", `현재 재생 가능한 보관 음원 ${available.length}곡을 중복 없이 무작위 순서로 재생`);
+    elements.shuffleButton.setAttribute("aria-label", `랜덤 재생: 현재 재생 가능한 보관 음원 ${available.length}곡을 중복 없이 무작위 순서로 재생`);
     updateRepeatOneButton();
     updatePlaybackToggle();
 
@@ -581,7 +580,6 @@
     button.type = "button";
     button.className = "track-card";
     button.dataset.trackId = track.id;
-    button.setAttribute("aria-label", cardAccessibleLabel(track));
     button.setAttribute("aria-current", track.id === state.selectedId ? "true" : "false");
     button.style.setProperty("--card-accent", track.theme.accent);
     button.style.setProperty("--card-soft", track.theme.soft);
@@ -1013,7 +1011,12 @@
       text(elements.songCount, String(state.tracks.length));
       text(elements.bookCount, String(new Set(state.tracks.map((track) => `${track.author}:${track.book}`)).size));
       const requested = new URL(window.location.href).searchParams.get("track");
-      selectTrack(state.tracks.some((track) => track.id === requested) ? requested : state.tracks[0]?.id);
+      const normalizedRequested = normalizeRequestedTrackId(requested);
+      const initialTrack = state.tracks.find((track) => track.id === normalizedRequested) || state.tracks[0];
+      if (initialTrack) {
+        const shouldNormalizeUrl = requested !== null && requested !== initialTrack.id;
+        selectTrack(initialTrack.id, { updateUrl: shouldNormalizeUrl });
+      }
       void loadPlayCounts();
       window.__BOOK_SONG_READY__ = true;
       window.__BOOK_SONG_APP__ = {
