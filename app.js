@@ -918,6 +918,29 @@
     return searchable.includes(state.query);
   };
 
+  const trackSpotlightPointerQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
+  const trackSpotlightMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const canUseTrackSpotlight = () => trackSpotlightPointerQuery.matches && !trackSpotlightMotionQuery.matches;
+
+  const resetTrackSpotlight = (shell) => {
+    delete shell.dataset.spotlightActive;
+    shell.style.setProperty("--spotlight-x", "50%");
+    shell.style.setProperty("--spotlight-y", "50%");
+  };
+
+  const bindTrackSpotlight = (shell) => {
+    if (!canUseTrackSpotlight()) return;
+    shell.addEventListener("pointermove", (event) => {
+      if (event.pointerType === "touch") return;
+      const bounds = shell.getBoundingClientRect();
+      shell.style.setProperty("--spotlight-x", `${Math.round(event.clientX - bounds.left)}px`);
+      shell.style.setProperty("--spotlight-y", `${Math.round(event.clientY - bounds.top)}px`);
+      shell.dataset.spotlightActive = "true";
+    });
+    shell.addEventListener("pointerleave", () => resetTrackSpotlight(shell));
+    shell.addEventListener("pointercancel", () => resetTrackSpotlight(shell));
+  };
+
   const createTrackCard = (track) => {
     const status = mediaStatus(track.id);
     const shell = document.createElement("article");
@@ -931,7 +954,9 @@
     button.dataset.trackId = track.id;
     button.setAttribute("aria-current", track.id === state.selectedId ? "true" : "false");
 
-
+    const spotlight = document.createElement("span");
+    spotlight.className = "track-card-spotlight";
+    spotlight.setAttribute("aria-hidden", "true");
     const top = document.createElement("div");
     top.className = "track-card-top";
     const number = document.createElement("span");
@@ -962,7 +987,7 @@
     action.className = "track-card-action";
     action.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z"/></svg><span>이 곡 선택하기</span>';
 
-    button.append(top, title, book, meta, question, action);
+    button.append(spotlight, top, title, book, meta, question, action);
     button.addEventListener("click", () => {
       selectTrack(track.id, { updateUrl: true });
       document.querySelector("#listen").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -985,6 +1010,7 @@
     });
 
     shell.append(button, favoriteButton);
+    bindTrackSpotlight(shell);
     return shell;
   };
 
