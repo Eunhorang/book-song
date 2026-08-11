@@ -49,7 +49,9 @@ const withEnvironment = async (callback) => {
 
 test("곡 번호와 UUID 형식을 제한한다", () => {
   assert.equal(__testables.TRACK_ID.test("01"), true);
-  assert.equal(__testables.TRACK_ID.test("10"), false);
+  assert.equal(__testables.TRACK_ID.test("10"), true);
+  assert.equal(__testables.TRACK_ID.test("11"), false);
+  assert.equal(__testables.TRACK_ID.test("00"), false);
   assert.equal(__testables.EVENT_ID.test("123e4567-e89b-42d3-a456-426614174000"), true);
   assert.equal(__testables.EVENT_ID.test("not-an-event"), false);
 });
@@ -62,9 +64,10 @@ test("공개 사이트와 로컬 QA 주소만 브라우저 Origin으로 허용�
 
 test("누락된 곡은 0회로 정규화한다", () => {
   const counts = __testables.normalizedCounts([{ track_id: "02", play_count: 7 }]);
-  assert.equal(Object.keys(counts).length, 9);
+  assert.equal(Object.keys(counts).length, 10);
   assert.equal(counts["01"], 0);
   assert.equal(counts["02"], 7);
+  assert.equal(counts["10"], 0);
 });
 
 test("허용되지 않은 Origin은 데이터베이스 호출 전에 거절한다", async () => {
@@ -73,7 +76,7 @@ test("허용되지 않은 Origin은 데이터베이스 호출 전에 거절한�
   assert.equal(res.result.statusCode, 403);
 });
 
-test("GET은 9곡 누적 재생수를 반환한다", async () => {
+test("GET은 10곡 누적 재생수를 반환한다", async () => {
   await withEnvironment(async () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = async () => new Response(
@@ -86,6 +89,7 @@ test("GET은 9곡 누적 재생수를 반환한다", async () => {
       assert.equal(res.result.statusCode, 200);
       assert.equal(res.result.body.counts["01"], 3);
       assert.equal(res.result.body.counts["09"], 0);
+      assert.equal(res.result.body.counts["10"], 0);
     } finally {
       globalThis.fetch = originalFetch;
     }
@@ -108,11 +112,11 @@ test("30초 미만 POST는 저장하지 않는다", async () => {
   assert.equal(res.result.statusCode, 400);
 });
 
-test("유효한 POST 결과를 정규화한다", async () => {
+test("10번 곡의 유효한 POST 결과를 정규화한다", async () => {
   await withEnvironment(async () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = async () => new Response(
-      JSON.stringify([{ track_id: "03", play_count: 11, counted: true }]),
+      JSON.stringify([{ track_id: "10", play_count: 11, counted: true }]),
       { status: 200, headers: { "Content-Type": "application/json" } },
     );
     try {
@@ -121,7 +125,7 @@ test("유효한 POST 결과를 정규화한다", async () => {
         request({
           method: "POST",
           body: {
-            trackId: "03",
+            trackId: "10",
             eventId: "123e4567-e89b-42d3-a456-426614174000",
             playedSeconds: 30,
           },
@@ -129,7 +133,7 @@ test("유효한 POST 결과를 정규화한다", async () => {
         res,
       );
       assert.equal(res.result.statusCode, 200);
-      assert.deepEqual(res.result.body, { trackId: "03", playCount: 11, counted: true });
+      assert.deepEqual(res.result.body, { trackId: "10", playCount: 11, counted: true });
     } finally {
       globalThis.fetch = originalFetch;
     }

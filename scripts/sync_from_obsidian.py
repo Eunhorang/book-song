@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import re
+from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -51,8 +52,8 @@ def section(text: str, heading: str) -> str:
 
 def clean_inline(value: str) -> str:
     value = re.sub(r"\[\[(.*?)(?:\|(.*?))?\]\]", lambda m: m.group(2) or m.group(1), value)
-    value = value.replace("**", "").replace("__", "").strip()
-    return value.strip("“”\"")
+    value = value.replace("**", "").replace("__", "").replace("`", "").strip()
+    return value.strip("“”\"\"")
 
 
 def bullet(section_text: str, label: str) -> str:
@@ -92,6 +93,21 @@ def chorus_hook(lyrics: str) -> str:
     if not match:
         return ""
     return "\n".join(line.strip() for line in match.group(1).splitlines() if line.strip())
+
+
+def upload_date_overrides(values: list[str]) -> dict[str, str]:
+    result: dict[str, str] = {}
+    for value in values:
+        match = re.fullmatch(r"(\d{2})=(\d{4}-\d{2}-\d{2})", value.strip())
+        if not match:
+            raise SystemExit(f"업로드 날짜 형식은 NN=YYYY-MM-DD여야 합니다: {value}")
+        track_id, uploaded_at = match.groups()
+        try:
+            date.fromisoformat(uploaded_at)
+        except ValueError as error:
+            raise SystemExit(f"유효하지 않은 업로드 날짜입니다: {value}") from error
+        result[track_id] = uploaded_at
+    return result
 
 
 def parse_note(path: Path) -> dict:
@@ -135,21 +151,50 @@ def resolve_source_dir(cli_value: str | None) -> Path:
 def main() -> None:
     parser=argparse.ArgumentParser()
     parser.add_argument("--source-dir", help="번호가 붙은 곡 노트 폴더")
+    parser.add_argument(
+        "--uploaded-at",
+        action="append",
+        default=[],
+        metavar="NN=YYYY-MM-DD",
+        help="새 음원의 Git 업로드 날짜. 기존 곡 날짜는 자동 보존합니다.",
+    )
     args=parser.parse_args()
     source_dir=resolve_source_dir(args.source_dir)
     notes=sorted(source_dir.glob("[0-9][0-9]-*.md"))
     if not notes:
         raise SystemExit(f"곡 노트를 찾지 못했습니다: {source_dir}")
+    existing_tracks: dict[str, dict] = {}
+    if TRACKS_PATH.exists():
+        existing_tracks = {
+            str(track.get("id")): track
+            for track in json.loads(TRACKS_PATH.read_text(encoding="utf-8"))
+            if track.get("id")
+        }
+    uploaded_at_overrides = upload_date_overrides(args.uploaded_at)
     tracks=[]
     for path in notes:
         try:
-            tracks.append(parse_note(path))
+            track = parse_note(path)
         except ValueError as error:
             raise SystemExit(f"{path.name}: {error}") from error
+        track_id = track["id"]
+        uploaded_at = uploaded_at_overrides.get(
+            track_id, str(existing_tracks.get(track_id, {}).get("uploadedAt", ""))
+        )
+        if not uploaded_at:
+            raise SystemExit(
+                f"{track_id} 현재 음원 업로드 날짜가 없습니다. "
+                f"--uploaded-at {track_id}=YYYY-MM-DD를 지정해 주세요."
+            )
+        track = {"id": track_id, "uploadedAt": uploaded_at, **{k: v for k, v in track.items() if k != "id"}}
+        tracks.append(track)
     ids=[track["id"] for track in tracks]
     expected=[f"{n:02d}" for n in range(1,len(tracks)+1)]
     if ids != expected:
         raise SystemExit(f"곡 번호가 연속적이지 않습니다: {ids}")
+    unknown_overrides = sorted(set(uploaded_at_overrides) - set(ids))
+    if unknown_overrides:
+        raise SystemExit(f"존재하지 않는 곡의 업로드 날짜가 지정됐습니다: {unknown_overrides}")
     DATA_DIR.mkdir(parents=True,exist_ok=True)
     TRACKS_PATH.write_text(json.dumps(tracks,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     media={}

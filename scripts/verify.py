@@ -7,6 +7,7 @@ import argparse
 import json
 import re
 import subprocess
+from datetime import date
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -38,7 +39,9 @@ def main() -> None:
         for key in ["uploadedAt","title","book","author","question","message","hook","lyrics","meanings","narration","endingQuestion","theme"]:
             if not track.get(key):
                 errors.append(f"{track.get('id')} 필드 누락: {key}")
-        if not re.fullmatch(r"2026-08-10",track.get("uploadedAt","")):
+        try:
+            date.fromisoformat(str(track.get("uploadedAt", "")))
+        except ValueError:
             errors.append(f"{track.get('id')} 현재 음원 업로드 날짜 오류")
         if len(track.get("meanings",[]))<3:
             errors.append(f"{track.get('id')} 의미 해석이 너무 적습니다.")

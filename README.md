@@ -29,7 +29,7 @@
 
 ## 업로드 날짜와 누적 재생수
 
-- `data/tracks.json`의 `uploadedAt`은 현재 공개 음원 파일이 Git 저장소에 처음 올라온 실제 날짜입니다.
+- `data/tracks.json`의 `uploadedAt`은 현재 공개 중인 음원 파일이 Git 저장소에서 마지막으로 추가·교체된 실제 날짜입니다. 제작일이나 외부 플랫폼 최초 공개일을 추정하지 않습니다.
 - 누적 재생수는 GitHub Pages가 `https://book-song-plays-api.vercel.app/api/plays`를 호출하고, Vercel API가 Supabase의 원자적 증가 함수에 기록합니다.
 - 한 곡의 실제 미디어 진행 시간이 누적 **30초**에 도달하면 1회로 기록합니다.
 - 일시정지·이어 듣기·사이트 화면 전환은 같은 재생으로 이어집니다. 탐색바로 건너뛴 시간은 포함하지 않습니다.
@@ -45,7 +45,7 @@
 
 - Vercel 프로젝트: `book-song-plays-api`
 - Supabase 프로젝트: `book-song-plays` (`Northeast Asia (Seoul)`)
-- SQL 마이그레이션: `services/play-counter-api/supabase/migrations/20260811_create_play_counter.sql`
+- SQL 마이그레이션: 초기 `20260811_create_play_counter.sql`, 10번 확장 `20260811120000_add_track_10_play_counter.sql`
 - Vercel 함수: `services/play-counter-api/api/plays.js`
 - 필요한 Vercel 환경변수: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
 - 서비스 역할 키는 Vercel의 Sensitive 환경변수에만 보관하며 브라우저에는 어떤 Supabase 키도 넣지 않습니다. 테이블과 RPC 함수는 익명·인증 사용자에게 공개하지 않습니다.
@@ -100,10 +100,12 @@ YouTube 예시:
 번호가 붙은 공개 곡 노트를 준비한 뒤 다음 명령으로 노래 데이터를 갱신합니다.
 
 ```bash
-python3 scripts/sync_from_obsidian.py --source-dir "곡 노트 폴더"
+python3 scripts/sync_from_obsidian.py --source-dir "곡 노트 폴더" --uploaded-at 10=2026-08-11
 python3 scripts/build.py
 python3 scripts/verify.py
 ```
+
+기존 곡의 `uploadedAt`은 동기화할 때 자동으로 보존됩니다. 새 곡이나 교체한 음원은 Git 이력에서 확인한 날짜를 `--uploaded-at NN=YYYY-MM-DD`로 명시합니다.
 
 웹사이트 공개 화면에는 제목, 참고 도서, 중심 질문, 가사, 의미 해석, 내레이션과 마지막 질문만 담깁니다.
 
