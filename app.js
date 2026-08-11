@@ -12,6 +12,8 @@
     playlistQueue: [],
     playlistIndex: -1,
     activeView: "home",
+    playCounts: {},
+    playCountsStatus: "loading",
   };
 
   const VIEW_LABELS = {
@@ -20,6 +22,12 @@
     meaning: "가사와 의미",
     about: "프로젝트 소개",
   };
+
+  const PLAY_COUNTS_ENDPOINT = "https://book-song-plays-api.vercel.app/api/plays";
+  const PLAY_QUALIFICATION_SECONDS = 30;
+  const PLAY_RETRY_DELAYS = [3000, 10000];
+  const playCountFormatter = new Intl.NumberFormat("ko-KR");
+  let playbackQualification = null;
 
   const elements = {
     siteHeader: document.querySelector(".site-header"),
@@ -36,6 +44,8 @@
     playerNumber: document.querySelector("#player-number"),
     playerTitle: document.querySelector("#player-title"),
     playerBook: document.querySelector("#player-book"),
+    playerUploaded: document.querySelector("#player-uploaded"),
+    playerPlayCount: document.querySelector("#player-play-count"),
     playerMessage: document.querySelector("#player-message"),
     playerHook: document.querySelector("#player-hook"),
     sourceSwitch: document.querySelector("#source-switch"),
@@ -61,6 +71,8 @@
     detailNumber: document.querySelector("#detail-number"),
     detailTitle: document.querySelector("#detail-title"),
     detailSource: document.querySelector("#detail-source"),
+    detailUploaded: document.querySelector("#detail-uploaded"),
+    detailPlayCount: document.querySelector("#detail-play-count"),
     lyricsText: document.querySelector("#lyrics-text"),
     meaningGrid: document.querySelector("#meaning-grid"),
     detailQuestion: document.querySelector("#detail-question"),
@@ -79,6 +91,39 @@
   };
 
   const selectedTrack = () => state.tracks.find((track) => track.id === state.selectedId);
+
+  const uploadedLabel = (track) => {
+    const value = typeof track?.uploadedAt === "string" ? track.uploadedAt : "";
+    return /^\d{4}-\d{2}-\d{2}$/.test(value) ? `업로드 ${value.replaceAll("-", ".")}` : "업로드 날짜 확인 중";
+  };
+
+  const playCountLabel = (trackId) => {
+    const value = Number(state.playCounts[trackId]);
+    if (state.playCountsStatus !== "ready" || !Number.isSafeInteger(value) || value < 0) {
+      return state.playCountsStatus === "unavailable" ? "누적 재생 연결 대기" : "누적 재생 확인 중";
+    }
+    return `누적 재생 ${playCountFormatter.format(value)}회`;
+  };
+
+  const cardAccessibleLabel = (track) =>
+    `${track.title}, ${track.author} ${track.book}, ${uploadedLabel(track)}, ${playCountLabel(track.id)}, 선택하기`;
+
+  const updatePlayCountViews = () => {
+    const track = selectedTrack();
+    if (track) {
+      text(elements.playerUploaded, uploadedLabel(track));
+      text(elements.playerPlayCount, playCountLabel(track.id));
+      text(elements.detailUploaded, uploadedLabel(track));
+      text(elements.detailPlayCount, playCountLabel(track.id));
+    }
+    for (const card of elements.trackGrid.querySelectorAll(".track-card[data-track-id]")) {
+      const cardTrack = state.tracks.find((item) => item.id === card.dataset.trackId);
+      if (!cardTrack) continue;
+      const count = card.querySelector("[data-play-count]");
+      if (count) text(count, playCountLabel(cardTrack.id));
+      card.setAttribute("aria-label", cardAccessibleLabel(cardTrack));
+    }
+  };
 
   const normalizeView = (value) => (Object.hasOwn(VIEW_LABELS, value) ? value : "home");
 
@@ -208,6 +253,130 @@
     if (state.mediaMode === "audio") return elements.mainPlayer;
     if (state.mediaMode === "video") return elements.videoPlayer;
     return null;
+  };
+
+  const loadPlayCounts = async () => {
+    try {
+      const response = await fetch(PLAY_COUNTS_ENDPOINT, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+        credentials: "omit",
+      });
+      if (!response.ok) throw new Error("play-count-load-failed");
+      const payload = await response.json();
+      const counts = {};
+      for (const track of state.tracks) {
+        const value = Number(payload.counts?.[track.id]);
+        if (!Number.isSafeInteger(value) || value < 0) throw new Error("invalid-play-count");
+        counts[track.id] = value;
+      }
+      state.playCounts = counts;
+      state.playCountsStatus = "ready";
+    } catch {
+      state.playCountsStatus = "unavailable";
+    }
+    updatePlayCountViews();
+  };
+
+  const createEventId = () => {
+    if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const value = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+    return `${value.slice(0, 8)}-${value.slice(8, 12)}-${value.slice(12, 16)}-${value.slice(16, 20)}-${value.slice(20)}`;
+  };
+
+  const resetPlaybackQualification = () => {
+    if (playbackQualification?.retryTimer) window.clearTimeout(playbackQualification.retryTimer);
+    playbackQualification = null;
+  };
+
+  const beginPlaybackQualification = (player) => {
+    resetPlaybackQualification();
+    playbackQualification = {
+      trackId: state.selectedId,
+      player,
+      eventId: createEventId(),
+      playedSeconds: 0,
+      lastMediaTime: Number(player.currentTime) || 0,
+      counted: false,
+      sending: false,
+      retryTimer: null,
+    };
+    return playbackQualification;
+  };
+
+  const qualificationFor = (player) => {
+    const restartAfterCount =
+      playbackQualification?.counted &&
+      playbackQualification.trackId === state.selectedId &&
+      playbackQualification.player === player &&
+      player.currentTime < 1;
+    if (
+      !playbackQualification ||
+      playbackQualification.trackId !== state.selectedId ||
+      playbackQualification.player !== player ||
+      restartAfterCount
+    ) {
+      return beginPlaybackQualification(player);
+    }
+    return playbackQualification;
+  };
+
+  const recordQualifiedPlay = async (session, attempt = 0) => {
+    if (session !== playbackQualification || session.counted || session.sending) return;
+    session.sending = true;
+    try {
+      const response = await fetch(PLAY_COUNTS_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          trackId: session.trackId,
+          eventId: session.eventId,
+          playedSeconds: Math.max(PLAY_QUALIFICATION_SECONDS, Math.floor(session.playedSeconds)),
+        }),
+        cache: "no-store",
+        credentials: "omit",
+      });
+      if (!response.ok) throw new Error("play-count-save-failed");
+      const payload = await response.json();
+      const value = Number(payload.playCount);
+      if (payload.trackId !== session.trackId || !Number.isSafeInteger(value) || value < 0) {
+        throw new Error("invalid-play-count-response");
+      }
+      session.counted = true;
+      state.playCounts[session.trackId] = value;
+      state.playCountsStatus = "ready";
+      updatePlayCountViews();
+    } catch {
+      if (session === playbackQualification && attempt < PLAY_RETRY_DELAYS.length) {
+        session.retryTimer = window.setTimeout(() => {
+          session.retryTimer = null;
+          recordQualifiedPlay(session, attempt + 1);
+        }, PLAY_RETRY_DELAYS[attempt]);
+      }
+    } finally {
+      session.sending = false;
+    }
+  };
+
+  const updatePlaybackQualification = (player) => {
+    if (player.paused || player.seeking || !state.selectedId) return;
+    const session = qualificationFor(player);
+    const currentTime = Number(player.currentTime) || 0;
+    const delta = currentTime - session.lastMediaTime;
+    session.lastMediaTime = currentTime;
+    if (delta > 0 && delta <= 4) session.playedSeconds += delta;
+    if (
+      session.playedSeconds >= PLAY_QUALIFICATION_SECONDS &&
+      !session.counted &&
+      !session.sending &&
+      !session.retryTimer
+    ) {
+      recordQualifiedPlay(session);
+    }
   };
 
   const playlistIsActive = () =>
@@ -375,7 +544,7 @@
     button.type = "button";
     button.className = "track-card";
     button.dataset.trackId = track.id;
-    button.setAttribute("aria-label", `${track.title}, ${track.author} ${track.book}, 선택하기`);
+    button.setAttribute("aria-label", cardAccessibleLabel(track));
     button.setAttribute("aria-current", track.id === state.selectedId ? "true" : "false");
     button.style.setProperty("--card-accent", track.theme.accent);
     button.style.setProperty("--card-soft", track.theme.soft);
@@ -395,6 +564,14 @@
     const book = document.createElement("p");
     book.className = "track-card-book";
     book.textContent = `${track.author} 《${track.book}》`;
+    const meta = document.createElement("p");
+    meta.className = "track-card-meta";
+    const uploaded = document.createElement("span");
+    uploaded.textContent = uploadedLabel(track);
+    const count = document.createElement("span");
+    count.dataset.playCount = "";
+    count.textContent = playCountLabel(track.id);
+    meta.append(uploaded, count);
     const question = document.createElement("p");
     question.className = "track-card-question";
     question.textContent = track.question;
@@ -402,7 +579,7 @@
     action.className = "track-card-action";
     action.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z"/></svg><span>이 곡 선택하기</span>';
 
-    button.append(top, title, book, question, action);
+    button.append(top, title, book, meta, question, action);
     button.addEventListener("click", () => {
       selectTrack(track.id, { updateUrl: true });
       document.querySelector("#listen").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -530,6 +707,7 @@
         if (playlistIsActive() && option.key !== "audio") {
           clearPlaylist("영상 재생을 선택하여 랜덤 재생을 종료했습니다.");
         }
+        resetPlaybackQualification();
         state.mediaMode = option.key;
         renderSourceSwitch(track);
         updatePlaylistControls();
@@ -576,6 +754,7 @@
     if (!options.preservePlaylist && playlistIsActive()) clearPlaylist();
     const track = state.tracks.find((item) => item.id === trackId) || state.tracks[0];
     if (!track) return;
+    resetPlaybackQualification();
     state.selectedId = track.id;
     state.mediaMode = null;
     applyTheme(track);
@@ -592,6 +771,7 @@
     renderSourceSwitch(track);
     renderDetails(track);
     renderLibrary();
+    updatePlayCountViews();
     updatePlaylistControls();
     updateDocumentTitle();
     if (options.updateUrl) updateUrl(track.id);
@@ -703,9 +883,33 @@
         updatePlaylistControls();
         if (mode === "audio") advancePlaylist();
       });
-      player.addEventListener("play", () => updatePlaylistControls());
-      player.addEventListener("playing", () => updatePlaylistControls());
-      player.addEventListener("pause", () => updatePlaylistControls());
+      player.addEventListener("play", () => {
+        const session = qualificationFor(player);
+        session.lastMediaTime = Number(player.currentTime) || 0;
+        updatePlaylistControls();
+      });
+      player.addEventListener("playing", () => {
+        const session = qualificationFor(player);
+        session.lastMediaTime = Number(player.currentTime) || 0;
+        updatePlaylistControls();
+      });
+      player.addEventListener("pause", () => {
+        if (playbackQualification?.player === player) {
+          playbackQualification.lastMediaTime = Number(player.currentTime) || 0;
+        }
+        updatePlaylistControls();
+      });
+      player.addEventListener("seeking", () => {
+        if (playbackQualification?.player === player) {
+          playbackQualification.lastMediaTime = Number(player.currentTime) || 0;
+        }
+      });
+      player.addEventListener("seeked", () => {
+        if (playbackQualification?.player === player) {
+          playbackQualification.lastMediaTime = Number(player.currentTime) || 0;
+        }
+      });
+      player.addEventListener("timeupdate", () => updatePlaybackQualification(player));
       player.addEventListener("error", () => {
         const shouldAdvance = mode === "audio" && playlistIsActive();
         showEmptyMedia(mode === "audio" ? "음원 파일을 불러오지 못했습니다" : "영상 파일을 불러오지 못했습니다");
@@ -749,6 +953,7 @@
       text(elements.bookCount, String(new Set(state.tracks.map((track) => `${track.author}:${track.book}`)).size));
       const requested = new URL(window.location.href).searchParams.get("track");
       selectTrack(state.tracks.some((track) => track.id === requested) ? requested : state.tracks[0]?.id);
+      void loadPlayCounts();
       window.__BOOK_SONG_READY__ = true;
       window.__BOOK_SONG_APP__ = {
         getState: () => ({
@@ -760,6 +965,11 @@
           playlistIndex: state.playlistIndex,
           playableIds: audioTracks().map((track) => track.id),
           activeView: state.activeView,
+          playCounts: { ...state.playCounts },
+          playCountsStatus: state.playCountsStatus,
+          qualifyingTrackId: playbackQualification?.trackId || null,
+          qualifiedSeconds: playbackQualification?.playedSeconds || 0,
+          playCountRecorded: Boolean(playbackQualification?.counted),
         }),
         parseYoutubeId,
         selectTrack: (id) => selectTrack(String(id).padStart(2, "0"), { updateUrl: false }),

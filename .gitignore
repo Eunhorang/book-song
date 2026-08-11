@@ -1,5 +1,6 @@
 dist/
 qa-output/
+.vercel/
 .DS_Store
 __pycache__/
 *.pyc

@@ -7,7 +7,7 @@
   <meta name="color-scheme" content="light">
   <meta name="author" content="이정주">
   <meta name="description" content="책이 남긴 질문을 노래와 가사 해석으로 만나는 이정주의 음악 아카이브">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; media-src 'self'; connect-src 'self'; frame-src https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; media-src 'self'; connect-src 'self' https://book-song-plays-api.vercel.app; frame-src https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self'; form-action 'none'">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="ko_KR">
   <meta property="og:title" content="책이 노래가 될 때">
@@ -24,7 +24,7 @@
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <link rel="manifest" href="./site.webmanifest">
   <link rel="preload" href="./fonts/PretendardVariable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="./styles.css?v=20260811-copyright1">
+  <link rel="stylesheet" href="./styles.css?v=20260811-plays1">
   <title>책이 노래가 될 때</title>
 </head>
 <body>
@@ -130,6 +130,11 @@
           </div>
           <h3 id="player-title">노래를 불러오는 중입니다</h3>
           <p class="book-line" id="player-book"></p>
+          <p class="track-meta" aria-label="곡 공개 및 재생 정보">
+            <span id="player-uploaded">업로드 날짜 확인 중</span>
+            <span class="meta-separator" aria-hidden="true">·</span>
+            <span id="player-play-count" aria-live="polite" aria-atomic="true">누적 재생 확인 중</span>
+          </p>
           <p class="track-message" id="player-message"></p>
 
           <div class="source-switch" id="source-switch" aria-label="재생 방법" hidden></div>
@@ -211,7 +216,14 @@
             <span id="detail-number">05번째 노래</span>
             <h3 id="detail-title">노래 제목</h3>
           </div>
-          <p id="detail-source"></p>
+          <div class="detail-source-group">
+            <p id="detail-source"></p>
+            <p class="track-meta" aria-label="곡 공개 및 재생 정보">
+              <span id="detail-uploaded">업로드 날짜 확인 중</span>
+              <span class="meta-separator" aria-hidden="true">·</span>
+              <span id="detail-play-count">누적 재생 확인 중</span>
+            </p>
+          </div>
         </div>
 
         <div class="tabs" role="tablist" aria-label="노래 상세 내용">
@@ -267,6 +279,6 @@
   </footer>
 
   <noscript>이 웹사이트에서 노래 목록을 살펴보려면 JavaScript를 켜 주세요.</noscript>
-  <script src="./app.js?v=20260811-copyright1" defer></script>
+  <script src="./app.js?v=20260811-plays1" defer></script>
 </body>
 </html>

@@ -751,6 +751,22 @@ svg {
   font-weight: 680;
 }
 
+.track-meta {
+  margin: 8px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  color: #756a5f;
+  font-size: 0.77rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.meta-separator {
+  color: color-mix(in srgb, var(--track-accent, var(--accent)) 48%, #a89d91);
+}
+
 .track-message {
   max-width: 700px;
   margin: 14px 0 18px;
@@ -1075,6 +1091,24 @@ svg {
   line-height: 1.5;
 }
 
+.track-card-meta {
+  position: relative;
+  margin: 10px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: #756a5f;
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.track-card-meta span + span::before {
+  content: "·";
+  margin-right: 12px;
+  color: color-mix(in srgb, var(--card-accent) 48%, #a89d91);
+}
+
 .track-card-question {
   position: relative;
   margin: auto 0 0;
@@ -1151,11 +1185,21 @@ svg {
   line-height: 1.2;
 }
 
-.detail-header > p {
+.detail-source-group {
+  max-width: 430px;
+  text-align: right;
+}
+
+.detail-source-group > p {
   margin: 0;
   color: var(--ink-soft);
   font-size: 0.86rem;
-  text-align: right;
+}
+
+.detail-source-group .track-meta {
+  margin-top: 7px;
+  justify-content: flex-end;
+  font-size: 0.75rem;
 }
 
 .tabs {
@@ -1771,8 +1815,13 @@ noscript {
     gap: 10px;
   }
 
-  .detail-header > p {
+  .detail-source-group {
+    max-width: none;
     text-align: left;
+  }
+
+  .detail-source-group .track-meta {
+    justify-content: flex-start;
   }
 
   .tabs {

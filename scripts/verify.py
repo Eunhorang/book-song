@@ -35,9 +35,11 @@ def main() -> None:
     if ids != expected:
         errors.append(f"곡 번호 불연속: {ids}")
     for track in tracks:
-        for key in ["title","book","author","question","message","hook","lyrics","meanings","narration","endingQuestion","theme"]:
+        for key in ["uploadedAt","title","book","author","question","message","hook","lyrics","meanings","narration","endingQuestion","theme"]:
             if not track.get(key):
                 errors.append(f"{track.get('id')} 필드 누락: {key}")
+        if not re.fullmatch(r"2026-08-10",track.get("uploadedAt","")):
+            errors.append(f"{track.get('id')} 현재 음원 업로드 날짜 오류")
         if len(track.get("meanings",[]))<3:
             errors.append(f"{track.get('id')} 의미 해석이 너무 적습니다.")
         entry=media.get(track["id"])
@@ -56,7 +58,7 @@ def main() -> None:
         if youtube and not re.fullmatch(r"https://www\.youtube\.com/watch\?v=[A-Za-z0-9_-]{11}",youtube):
             errors.append(f"{track['id']} YouTube 주소 오류")
     html=(base/"index.html").read_text(encoding="utf-8")
-    for marker in ['lang="ko"','id="main-content"','class="skip-link"','id="track-search"','<audio id="main-player"','<video id="video-player"','data-media-kind="empty"','class="header-playback"','aria-label="상단 노래 재생 메뉴"','id="shuffle-button"','id="playlist-status"','id="playback-toggle-button"','aria-controls="main-player video-player"','data-action="unavailable"','data-playback-state="idle"','id="view-status"','data-condensed="false"','id="library-jump"','class="player-detail-link"','data-view-link="library"','data-view-link="meaning"','data-view-link="about"','data-view-panel="home"','data-view-panel="library"','data-view-panel="meaning"','data-view-panel="about"','aria-live="polite"','class="brand-mark" src="./assets/brand-symbol.png"','class="hero-brand-image" src="./assets/brand-main.jpg"','href="./assets/favicon-64.png"','href="./fonts/PretendardVariable.woff2"']:
+    for marker in ['lang="ko"','id="main-content"','class="skip-link"','id="track-search"','<audio id="main-player"','<video id="video-player"','data-media-kind="empty"','class="header-playback"','aria-label="상단 노래 재생 메뉴"','id="shuffle-button"','id="playlist-status"','id="playback-toggle-button"','aria-controls="main-player video-player"','data-action="unavailable"','data-playback-state="idle"','id="view-status"','data-condensed="false"','id="library-jump"','class="player-detail-link"','data-view-link="library"','data-view-link="meaning"','data-view-link="about"','data-view-panel="home"','data-view-panel="library"','data-view-panel="meaning"','data-view-panel="about"','aria-live="polite"','id="player-uploaded"','id="player-play-count"','id="detail-uploaded"','id="detail-play-count"','https://book-song-plays-api.vercel.app','class="brand-mark" src="./assets/brand-symbol.png"','class="hero-brand-image" src="./assets/brand-main.jpg"','href="./assets/favicon-64.png"','href="./fonts/PretendardVariable.woff2"']:
         if marker not in html:
             errors.append(f"HTML 접근성 표식 누락: {marker}")
     for marker in ['<span class="hero-title-line">읽고 남은 마음을</span>','<span class="hero-title-line">노래로 기록합니다.</span>']:
@@ -79,7 +81,7 @@ def main() -> None:
     if '<video id="main-player"' in html:
         errors.append("기본 플레이어가 영상 요소로 남아 있습니다.")
     stylesheet=(base/"styles.css").read_text(encoding="utf-8")
-    for marker in [".site-header", "position: sticky", '.site-header[data-condensed="true"]', ".header-playback", '.playlist-status[data-playback-state="playing"]', ".playback-toggle-button", '[data-action="pause"]', ':not([aria-pressed="true"])', '-webkit-text-fill-color: #fff', ".hero-title-line", '.media-stage[data-media-kind="audio"]', "#video-player", 'font-family: "Pretendard"', 'url("./fonts/PretendardVariable.woff2")', '.hero-brand-image', 'background-image: url("./assets/brand-main.jpg")', '.section-jump', '.player-detail-link', 'aspect-ratio: 16 / 9', 'color: #756a5f', '.tabs button[aria-selected="true"]']:
+    for marker in [".site-header", "position: sticky", '.site-header[data-condensed="true"]', ".header-playback", '.playlist-status[data-playback-state="playing"]', ".playback-toggle-button", '[data-action="pause"]', ':not([aria-pressed="true"])', '-webkit-text-fill-color: #fff', ".hero-title-line", '.media-stage[data-media-kind="audio"]', "#video-player", 'font-family: "Pretendard"', 'url("./fonts/PretendardVariable.woff2")', '.hero-brand-image', 'background-image: url("./assets/brand-main.jpg")', '.section-jump', '.player-detail-link', '.track-meta', '.track-card-meta', '.detail-source-group', 'aspect-ratio: 16 / 9', 'color: #756a5f', '.tabs button[aria-selected="true"]']:
         if marker not in stylesheet:
             errors.append(f"상단 고정 스타일 누락: {marker}")
     body_block=stylesheet.partition("body {")[2].partition("}")[0]
@@ -90,7 +92,7 @@ def main() -> None:
     javascript=(base/"app.js").read_text(encoding="utf-8")
     if "playAllButton" in javascript:
         errors.append("삭제 요청된 모든 노래 재생 버튼 JavaScript 참조가 남아 있습니다.")
-    for marker in ['const startPlaylist','const advancePlaylist','playlistQueue','shuffleIds','const setActiveView','addEventListener("popstate"','activeView','const setHeaderPlaybackStatus','const updatePlaybackToggle','playbackToggleButton.addEventListener("click"','현재 재생 중인 노래는','mediaStatus(track.id).key === "pending"','const audioTracks','const renderAudio','const renderVideo','state.mediaMode === "audio"','bindLocalPlayer(elements.mainPlayer, "audio")','addEventListener("pause"','const bindResponsiveHeader','librarySection.scrollIntoView']:
+    for marker in ['const startPlaylist','const advancePlaylist','playlistQueue','shuffleIds','const setActiveView','addEventListener("popstate"','activeView','const setHeaderPlaybackStatus','const updatePlaybackToggle','playbackToggleButton.addEventListener("click"','현재 재생 중인 노래는','mediaStatus(track.id).key === "pending"','const audioTracks','const renderAudio','const renderVideo','state.mediaMode === "audio"','bindLocalPlayer(elements.mainPlayer, "audio")','addEventListener("pause"','const bindResponsiveHeader','librarySection.scrollIntoView','PLAY_QUALIFICATION_SECONDS = 30','PLAY_COUNTS_ENDPOINT','const loadPlayCounts','const recordQualifiedPlay','const updatePlaybackQualification','credentials: "omit"','addEventListener("timeupdate"','addEventListener("seeking"','dataset.playCount = ""','uploadedLabel(track)']:
         if marker not in javascript:
             errors.append(f"연속 재생 기능 누락: {marker}")
     text_files=[p for p in base.rglob("*") if p.is_file() and p.suffix.lower() in {".html",".css",".js",".json",".webmanifest",".svg",".txt"}]
