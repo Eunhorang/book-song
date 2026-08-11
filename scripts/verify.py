@@ -8,6 +8,7 @@ import json
 import re
 import subprocess
 from datetime import date
+from html import escape
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -60,10 +61,29 @@ def main() -> None:
         youtube=entry.get("youtube","")
         if youtube and not re.fullmatch(r"https://www\.youtube\.com/watch\?v=[A-Za-z0-9_-]{11}",youtube):
             errors.append(f"{track['id']} YouTube 주소 오류")
+        share_page=base/"share"/track["id"]/"index.html"
+        if not share_page.is_file():
+            errors.append(f"{track['id']} 곡별 공유 페이지 누락")
+        else:
+            share_html=share_page.read_text(encoding="utf-8")
+            share_url=f"https://eunhorang.github.io/book-song/share/{track['id']}/"
+            destination=f"../../?view=meaning&amp;track={track['id']}"
+            for marker in [
+                f'<meta property="og:title" content="{escape(track["title"], quote=True)} | 책이 노래가 될 때">',
+                f'<meta property="og:description" content="{escape(track["question"], quote=True)}">',
+                f'<meta property="og:url" content="{share_url}">',
+                f'<link rel="canonical" href="{share_url}">',
+                f'href="{destination}"',
+                'content="noindex,follow"',
+            ]:
+                if marker not in share_html:
+                    errors.append(f"{track['id']} 곡별 공유 메타데이터 누락: {marker}")
     html=(base/"index.html").read_text(encoding="utf-8")
-    for marker in ['lang="ko"','id="main-content"','class="skip-link"','id="track-search"','<audio id="main-player"','<video id="video-player"','data-media-kind="empty"','class="header-playback"','aria-label="상단 노래 재생 메뉴"','id="shuffle-button"','id="repeat-one-button"','class="visually-hidden">한 곡 반복</span>','id="playlist-status"','id="playback-toggle-button"','aria-controls="main-player video-player"','data-action="unavailable"','data-playback-state="idle"','id="view-status"','data-condensed="false"','id="library-jump"','class="player-detail-link"','data-view-link="library"','data-view-link="meaning"','data-view-link="about"','data-view-panel="home"','data-view-panel="library"','data-view-panel="meaning"','data-view-panel="about"','aria-live="polite"','id="player-uploaded"','id="player-play-count"','id="detail-uploaded"','id="detail-play-count"','https://book-song-plays-api.vercel.app','class="brand-mark" src="./assets/brand-symbol.png"','class="hero-brand-image" src="./assets/brand-main.jpg"','href="./assets/favicon-64.png"','href="./fonts/PretendardVariable.woff2"']:
+    for marker in ['lang="ko"','id="main-content"','class="skip-link"','id="track-search"','<audio id="main-player"','<video id="video-player"','data-media-kind="empty"','class="header-playback"','aria-label="상단 노래 재생 메뉴"','id="shuffle-button"','id="repeat-one-button"','class="visually-hidden">한 곡 반복</span>','id="playlist-status"','id="playback-toggle-button"','aria-controls="main-player video-player"','data-action="unavailable"','data-playback-state="idle"','id="view-status"','id="share-status"','data-condensed="false"','id="library-jump"','class="player-detail-link"','id="player-share-button"','id="detail-share-button"','data-view-link="library"','data-view-link="meaning"','data-view-link="about"','data-view-panel="home"','data-view-panel="library"','data-view-panel="meaning"','data-view-panel="about"','aria-live="polite"','id="player-uploaded"','id="player-play-count"','id="detail-uploaded"','id="detail-play-count"','https://book-song-plays-api.vercel.app','class="brand-mark" src="./assets/brand-symbol.png"','class="hero-brand-image" src="./assets/brand-main.jpg"','href="./assets/favicon-64.png"','href="./fonts/PretendardVariable.woff2"']:
         if marker not in html:
             errors.append(f"HTML 접근성 표식 누락: {marker}")
+    if len(re.findall(r'</svg>\s*이 노래 공유하기\s*</button>', html)) != 2:
+        errors.append("곡별 공유 버튼 문구가 두 화면에 정확히 한 번씩 있지 않습니다.")
     for marker in ['<span class="hero-title-line">읽고 남은 마음을</span>','<span class="hero-title-line">노래로 기록합니다.</span>']:
         if marker not in html:
             errors.append(f"첫 화면 대표 문구 누락: {marker}")
@@ -84,7 +104,7 @@ def main() -> None:
     if '<video id="main-player"' in html:
         errors.append("기본 플레이어가 영상 요소로 남아 있습니다.")
     stylesheet=(base/"styles.css").read_text(encoding="utf-8")
-    for marker in [".site-header", "position: sticky", '.site-header[data-condensed="true"]', ".header-playback", ".repeat-one-button", '.playlist-status[data-playback-state="playing"]', 'animation: playback-record-spin', 'animation-play-state: paused', 'animation-play-state: running', '@keyframes playback-record-spin', '@media (prefers-reduced-motion: reduce)', 'animation: none !important', ".playback-toggle-button", '[data-action="pause"]', ':not([aria-pressed="true"])', '-webkit-text-fill-color: #fff', ".hero-title-line", '.media-stage[data-media-kind="audio"]', "#video-player", 'font-family: "Pretendard"', 'url("./fonts/PretendardVariable.woff2")', '.hero-brand-image', 'background-image: url("./assets/brand-main.jpg")', '.section-jump', '.player-detail-link', '.track-meta', '.track-card-meta', '.detail-source-group', 'aspect-ratio: 16 / 9', 'color: #756a5f', '.tabs button[aria-selected="true"]', 'color-mix(in srgb, var(--card-accent) 94%, var(--ink))', 'color-mix(in srgb, var(--card-accent) 84%, #111)']:
+    for marker in [".site-header", "position: sticky", '.site-header[data-condensed="true"]', ".header-playback", ".repeat-one-button", '.playlist-status[data-playback-state="playing"]', 'animation: playback-record-spin', 'animation-play-state: paused', 'animation-play-state: running', '@keyframes playback-record-spin', '@media (prefers-reduced-motion: reduce)', 'animation: none !important', ".playback-toggle-button", '[data-action="pause"]', ':not([aria-pressed="true"])', '-webkit-text-fill-color: #fff', ".hero-title-line", '.media-stage[data-media-kind="audio"]', "#video-player", 'font-family: "Pretendard"', 'url("./fonts/PretendardVariable.woff2")', '.hero-brand-image', 'background-image: url("./assets/brand-main.jpg")', '.section-jump', '.player-detail-link', '.track-share-button', '.player-actions', '.share-status', '.track-meta', '.track-card-meta', '.detail-source-group', 'aspect-ratio: 16 / 9', 'color: #756a5f', '.tabs button[aria-selected="true"]', 'color-mix(in srgb, var(--card-accent) 94%, var(--ink))', 'color-mix(in srgb, var(--card-accent) 84%, #111)']:
         if marker not in stylesheet:
             errors.append(f"상단 고정 스타일 누락: {marker}")
     body_block=stylesheet.partition("body {")[2].partition("}")[0]
@@ -103,7 +123,7 @@ def main() -> None:
         errors.append("곡 카드의 보이는 전체 문구를 덮는 접근성 이름이 남아 있습니다.")
     if '`랜덤 재생: 현재 재생 가능한 보관 음원 ${available.length}곡' not in javascript:
         errors.append("랜덤 재생의 보이는 문구가 접근성 이름에 포함되지 않았습니다.")
-    for marker in ['const startPlaylist','const advancePlaylist','playlistQueue','shuffleIds','repeatOne: false','repeatOneButton','const syncRepeatOneToPlayers','player.loop = Boolean(','!state.repeatOne &&','playbackQualification.lastMediaTime > player.currentTime + 1','setRepeatOneState(false)','mode === "audio" && !state.repeatOne','const setActiveView','addEventListener("popstate"','activeView','const setHeaderPlaybackStatus','const updatePlaybackToggle','playbackToggleButton.addEventListener("click"','현재 재생 중인 노래는','mediaStatus(track.id).key === "pending"','const audioTracks','const renderAudio','const renderVideo','state.mediaMode === "audio"','bindLocalPlayer(elements.mainPlayer, "audio")','addEventListener("pause"','const bindResponsiveHeader','librarySection.scrollIntoView','PLAY_QUALIFICATION_SECONDS = 30','PLAY_COUNTS_ENDPOINT','const loadPlayCounts','const recordQualifiedPlay','const updatePlaybackQualification','credentials: "omit"','addEventListener("timeupdate"','addEventListener("seeking"','dataset.playCount = ""','uploadedLabel(track)','const normalizeRequestedTrackId','requested !== null && requested !== initialTrack.id','selectTrack(initialTrack.id, { updateUrl: shouldNormalizeUrl })']:
+    for marker in ['const startPlaylist','const advancePlaylist','playlistQueue','shuffleIds','repeatOne: false','repeatOneButton','const syncRepeatOneToPlayers','player.loop = Boolean(','!state.repeatOne &&','playbackQualification.lastMediaTime > player.currentTime + 1','setRepeatOneState(false)','mode === "audio" && !state.repeatOne','const setActiveView','addEventListener("popstate"','activeView','const setHeaderPlaybackStatus','const updatePlaybackToggle','playbackToggleButton.addEventListener("click"','현재 재생 중인 노래는','mediaStatus(track.id).key === "pending"','const audioTracks','const renderAudio','const renderVideo','state.mediaMode === "audio"','bindLocalPlayer(elements.mainPlayer, "audio")','addEventListener("pause"','const bindResponsiveHeader','librarySection.scrollIntoView','PLAY_QUALIFICATION_SECONDS = 30','PLAY_COUNTS_ENDPOINT','const loadPlayCounts','const recordQualifiedPlay','const updatePlaybackQualification','credentials: "omit"','addEventListener("timeupdate"','addEventListener("seeking"','dataset.playCount = ""','uploadedLabel(track)','const normalizeRequestedTrackId','requested !== null && requested !== initialTrack.id','selectTrack(initialTrack.id, { updateUrl: shouldNormalizeUrl })','const shareUrlForTrack','const showShareStatus','navigator.share','navigator.clipboard.writeText','document.execCommand("copy")','error.name === "AbortError"','링크를 복사했습니다','공유를 취소했습니다']:
         if marker not in javascript:
             errors.append(f"연속 재생 기능 누락: {marker}")
     text_files=[p for p in base.rglob("*") if p.is_file() and p.suffix.lower() in {".html",".css",".js",".json",".webmanifest",".svg",".txt"}]

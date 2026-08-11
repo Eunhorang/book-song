@@ -898,9 +898,16 @@ svg {
   line-height: 1.58;
 }
 
+.player-actions {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+
 .player-detail-link {
   min-height: 44px;
-  margin-top: 10px;
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -920,9 +927,88 @@ svg {
   transition: transform 160ms ease;
 }
 
+.track-share-button {
+  min-height: 44px;
+  padding: 0 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--track-ink);
+  background: color-mix(in srgb, var(--track-soft) 72%, white);
+  border: 1px solid color-mix(in srgb, var(--track-accent) 52%, var(--line));
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 760;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.track-share-button svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.track-share-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.clipboard-copy-helper {
+  position: fixed;
+  top: 0;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.share-status {
+  position: fixed;
+  z-index: 1000;
+  left: 50%;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  width: max-content;
+  max-width: calc(100% - 24px);
+  margin: 0;
+  padding: 12px 18px;
+  color: #fffaf5;
+  background: #3c281a;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  box-shadow: 0 10px 28px rgba(52, 41, 28, 0.2);
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.45;
+  text-align: center;
+  opacity: 0;
+  transform: translate(-50%, 10px);
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.share-status[data-visible="true"] {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 @media (hover: hover) and (pointer: fine) {
   .player-detail-link:hover svg {
     transform: translateX(3px);
+  }
+
+  .track-share-button:hover:not(:disabled) {
+    background: #fff;
+    border-color: var(--track-accent);
+    box-shadow: 0 5px 14px rgba(52, 41, 28, 0.08);
+    transform: translateY(-1px);
   }
 }
 
@@ -1215,6 +1301,11 @@ svg {
   font-size: 0.75rem;
 }
 
+.detail-source-group .track-share-button {
+  margin-top: 12px;
+  margin-left: auto;
+}
+
 .tabs {
   padding: 8px 32px 0;
   display: flex;
@@ -1392,6 +1483,36 @@ svg {
   color: #aaa095;
   font-size: 0.84rem;
   line-height: 1.55;
+}
+
+.share-landing {
+  width: var(--shell);
+  min-height: 100svh;
+  margin: 0 auto;
+  padding: 48px 0;
+  display: grid;
+  place-items: center;
+}
+
+.share-landing-card {
+  width: min(100%, 720px);
+  padding: clamp(28px, 6vw, 56px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-soft);
+}
+
+.share-landing-card h1 {
+  margin: 10px 0 0;
+  font-size: clamp(2rem, 6vw, 3.4rem);
+  line-height: 1.18;
+}
+
+.share-landing-card > p:not(.eyebrow) {
+  margin: 20px 0 28px;
+  color: var(--ink-soft);
+  line-height: 1.8;
 }
 
 .site-footer {
@@ -1793,6 +1914,16 @@ noscript {
     justify-content: center;
   }
 
+  .player-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .player-actions .track-share-button {
+    width: 100%;
+  }
+
   .hook-quote {
     -webkit-line-clamp: 3;
     padding: 14px 16px;
@@ -1839,6 +1970,10 @@ noscript {
 
   .detail-source-group .track-meta {
     justify-content: flex-start;
+  }
+
+  .detail-source-group .track-share-button {
+    margin-left: 0;
   }
 
   .tabs {

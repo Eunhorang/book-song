@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import shutil
+from html import escape
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -13,6 +14,7 @@ FILES = ["index.html", "styles.css", "app.js", "site.webmanifest", ".nojekyll"]
 DIRS = ["assets", "fonts", "icons"]
 AUDIO_EXTENSIONS = {".mp3", ".mp4"}
 VIDEO_EXTENSIONS = {".mp4"}
+PUBLIC_SITE_URL = "https://eunhorang.github.io/book-song/"
 
 
 def copy_file(relative: str) -> None:
@@ -46,6 +48,63 @@ def conventional_audio(track_id: str) -> str:
         if candidate.is_file():
             return candidate.relative_to(ROOT).as_posix()
     return ""
+
+
+def share_page_html(track: dict[str, object]) -> str:
+    track_id = escape(str(track["id"]), quote=True)
+    title = escape(str(track["title"]), quote=True)
+    question = escape(str(track["question"]), quote=True)
+    share_url = f"{PUBLIC_SITE_URL}share/{track_id}/"
+    destination = f"../../?view=meaning&amp;track={track_id}"
+    social_image = f"{PUBLIC_SITE_URL}assets/og-card.png"
+    return f"""<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,follow">
+  <meta http-equiv="refresh" content="0; url={destination}">
+  <meta name="description" content="{question}">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:title" content="{title} | 책이 노래가 될 때">
+  <meta property="og:description" content="{question}">
+  <meta property="og:url" content="{share_url}">
+  <meta property="og:image" content="{social_image}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="책이 노래가 될 때 프로젝트 로고">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{title} | 책이 노래가 될 때">
+  <meta name="twitter:description" content="{question}">
+  <meta name="twitter:image" content="{social_image}">
+  <link rel="canonical" href="{share_url}">
+  <link rel="icon" href="../../assets/favicon-64.png" type="image/png" sizes="64x64">
+  <link rel="stylesheet" href="../../styles.css">
+  <title>{title} | 책이 노래가 될 때</title>
+</head>
+<body>
+  <main class="share-landing" id="main-content">
+    <article class="share-landing-card">
+      <p class="eyebrow">BOOKS INTO SONGS · TRACK {track_id}</p>
+      <h1>{title}</h1>
+      <p>{question}</p>
+      <a class="button button-primary" href="{destination}">가사와 의미에서 이 노래 만나기</a>
+    </article>
+  </main>
+</body>
+</html>
+"""
+
+
+def build_share_pages(tracks: list[dict[str, object]]) -> None:
+    for track in tracks:
+        track_id = str(track["id"])
+        if len(track_id) != 2 or not track_id.isdigit():
+            raise SystemExit(f"곡별 공유 경로에 사용할 수 없는 번호입니다: {track_id}")
+        target = DIST / "share" / track_id / "index.html"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(share_page_html(track), encoding="utf-8")
 
 
 def main() -> None:
@@ -99,10 +158,11 @@ def main() -> None:
         json.dumps(merged_media, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
+    build_share_pages(tracks)
     shutil.copy2(DIST / "index.html", DIST / "404.html")
     print(
         f"공개 패키지 생성: {len(tracks)}곡, 오디오 {audio_count}개, "
-        f"명시적 영상 {video_count}개 → {DIST}"
+        f"명시적 영상 {video_count}개, 공유 페이지 {len(tracks)}개 → {DIST}"
     )
 
 

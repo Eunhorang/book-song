@@ -18,13 +18,15 @@
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="손그림 책과 음표, 책이 노래가 될 때 로고">
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="책이 노래가 될 때">
+  <meta name="twitter:description" content="책을 요약하지 않습니다. 한 권이 남긴 질문을 노래합니다.">
   <meta name="twitter:image" content="https://eunhorang.github.io/book-song/assets/og-card.png">
   <link rel="canonical" href="https://eunhorang.github.io/book-song/">
   <link rel="icon" href="./assets/favicon-64.png" type="image/png" sizes="64x64">
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <link rel="manifest" href="./site.webmanifest">
   <link rel="preload" href="./fonts/PretendardVariable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="./styles.css?v=20260811-a11y1">
+  <link rel="stylesheet" href="./styles.css?v=20260811-share1">
   <title>책이 노래가 될 때</title>
 </head>
 <body>
@@ -75,6 +77,7 @@
 
   <main id="main-content">
     <p class="visually-hidden" id="view-status" aria-live="polite"></p>
+    <p class="share-status" id="share-status" role="status" aria-live="polite" aria-atomic="true"></p>
     <section class="hero view-panel" id="top" data-view-panel="home" aria-labelledby="hero-title">
       <div class="hero-inner">
         <div class="hero-copy">
@@ -163,10 +166,16 @@
           </div>
 
           <blockquote class="hook-quote" id="player-hook"></blockquote>
-          <a class="player-detail-link" href="?view=meaning" data-view-link="meaning" aria-controls="interpretation">
-            가사와 의미 살펴보기
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>
-          </a>
+          <div class="player-actions">
+            <a class="player-detail-link" href="?view=meaning" data-view-link="meaning" aria-controls="interpretation">
+              가사와 의미 살펴보기
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>
+            </a>
+            <button class="track-share-button" id="player-share-button" type="button" data-share-track aria-label="이 노래 공유하기" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/></svg>
+              이 노래 공유하기
+            </button>
+          </div>
         </div>
       </div>
     </section>
@@ -229,6 +238,10 @@
               <span class="meta-separator" aria-hidden="true">·</span>
               <span id="detail-play-count">누적 재생 확인 중</span>
             </p>
+            <button class="track-share-button" id="detail-share-button" type="button" data-share-track aria-label="이 노래 공유하기" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/></svg>
+              이 노래 공유하기
+            </button>
           </div>
         </div>
 
@@ -285,6 +298,6 @@
   </footer>
 
   <noscript>이 웹사이트에서 노래 목록을 살펴보려면 JavaScript를 켜 주세요.</noscript>
-  <script src="./app.js?v=20260811-a11y1" defer></script>
+  <script src="./app.js?v=20260811-share1" defer></script>
 </body>
 </html>

@@ -29,6 +29,7 @@
   const PLAY_RETRY_DELAYS = [3000, 10000];
   const playCountFormatter = new Intl.NumberFormat("ko-KR");
   let playbackQualification = null;
+  let shareStatusTimer = null;
 
   const elements = {
     siteHeader: document.querySelector(".site-header"),
@@ -49,6 +50,8 @@
     playerPlayCount: document.querySelector("#player-play-count"),
     playerMessage: document.querySelector("#player-message"),
     playerHook: document.querySelector("#player-hook"),
+    shareButtons: Array.from(document.querySelectorAll("[data-share-track]")),
+    shareStatus: document.querySelector("#share-status"),
     sourceSwitch: document.querySelector("#source-switch"),
     mediaStage: document.querySelector("#media-stage"),
     mainPlayer: document.querySelector("#main-player"),
@@ -126,6 +129,97 @@
   const normalizeRequestedTrackId = (value) =>
     typeof value === "string" && /^\d{1,2}$/.test(value) ? value.padStart(2, "0") : value;
 
+  const shareUrlForTrack = (track) => new URL(`share/${track.id}/`, new URL("./", window.location.href)).href;
+
+  const sharePayloadForTrack = (track) => ({
+    title: `${track.title} | 책이 노래가 될 때`,
+    text: `〈${track.title}〉\n${track.question}\n\n책이 남긴 질문을 노래로 만나 보세요.`,
+    url: shareUrlForTrack(track),
+  });
+
+  const updateShareButtons = (track) => {
+    for (const button of elements.shareButtons) {
+      button.disabled = !track;
+      button.removeAttribute("aria-busy");
+      if (!track) {
+        button.setAttribute("aria-label", "이 노래 공유하기");
+        button.removeAttribute("title");
+        continue;
+      }
+      const label = `이 노래 공유하기: 〈${track.title}〉`;
+      button.setAttribute("aria-label", label);
+      button.setAttribute("title", label);
+    }
+  };
+
+  const showShareStatus = (message) => {
+    window.clearTimeout(shareStatusTimer);
+    text(elements.shareStatus, message);
+    elements.shareStatus.dataset.visible = "true";
+    shareStatusTimer = window.setTimeout(() => {
+      elements.shareStatus.dataset.visible = "false";
+    }, 4000);
+  };
+
+  const copyWithTemporaryInput = (value) => {
+    const input = document.createElement("textarea");
+    input.className = "clipboard-copy-helper";
+    input.value = value;
+    input.setAttribute("readonly", "");
+    document.body.append(input);
+    input.select();
+    input.setSelectionRange(0, input.value.length);
+    const copied = document.execCommand("copy");
+    input.remove();
+    if (!copied) throw new Error("copy-command-failed");
+  };
+
+  const copyShareUrl = async (value) => {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      try {
+        await navigator.clipboard.writeText(value);
+        return;
+      } catch (error) {
+        // 브라우저 권한이 없을 때 동기식 복사 방식으로 한 번 더 시도한다.
+      }
+    }
+    copyWithTemporaryInput(value);
+  };
+
+  const shouldUseNativeShare = () =>
+    typeof navigator.share === "function" &&
+    (navigator.maxTouchPoints > 0 || window.matchMedia("(pointer: coarse)").matches);
+
+  const shareSelectedTrack = async () => {
+    const track = selectedTrack();
+    if (!track) return;
+    const payload = sharePayloadForTrack(track);
+    for (const button of elements.shareButtons) {
+      button.disabled = true;
+      button.setAttribute("aria-busy", "true");
+    }
+    try {
+      if (shouldUseNativeShare()) {
+        try {
+          await navigator.share(payload);
+          showShareStatus(`〈${track.title}〉 공유를 완료했습니다.`);
+          return;
+        } catch (error) {
+          if (error.name === "AbortError") {
+            showShareStatus(`〈${track.title}〉 공유를 취소했습니다.`);
+            return;
+          }
+        }
+      }
+      await copyShareUrl(payload.url);
+      showShareStatus(`〈${track.title}〉 링크를 복사했습니다.`);
+    } catch (error) {
+      showShareStatus("링크를 복사하지 못했습니다. 주소 표시줄의 링크를 복사해 주세요.");
+    } finally {
+      updateShareButtons(selectedTrack());
+    }
+  };
+
   const normalizeView = (value) => (Object.hasOwn(VIEW_LABELS, value) ? value : "home");
 
   const viewFromLocation = () => {
@@ -143,21 +237,45 @@
     return url.searchParams.has("track") ? "library" : "home";
   };
 
+  const setMetaContent = (selector, value) => {
+    document.querySelector(selector)?.setAttribute("content", value);
+  };
+
   const updateDocumentTitle = () => {
     const track = selectedTrack();
+    const viewUrl = new URL("./", window.location.href);
+    let documentTitle = "책이 노래가 될 때";
+    let socialTitle = documentTitle;
+    let description = "책을 요약하지 않습니다. 한 권이 남긴 질문을 노래합니다.";
+    let canonicalUrl = viewUrl.href;
+
     if (state.activeView === "library") {
-      document.title = "음악 보관함 | 책이 노래가 될 때";
-      return;
+      documentTitle = "음악 보관함 | 책이 노래가 될 때";
+      socialTitle = documentTitle;
+      description = "책이 남긴 질문을 노래로 만나는 이정주의 음악 보관함";
+      viewUrl.searchParams.set("view", "library");
+      canonicalUrl = viewUrl.href;
+    } else if (state.activeView === "meaning") {
+      documentTitle = `${track ? `${track.title} · ` : ""}가사와 의미 | 책이 노래가 될 때`;
+      socialTitle = track ? `${track.title} | 책이 노래가 될 때` : documentTitle;
+      description = track?.question || "한 곡의 생활 장면과 책이 남긴 질문을 가사와 해석으로 만나 보세요.";
+      canonicalUrl = track ? shareUrlForTrack(track) : viewUrl.href;
+    } else if (state.activeView === "about") {
+      documentTitle = "프로젝트 소개 | 책이 노래가 될 때";
+      socialTitle = documentTitle;
+      description = "한 권이 남긴 질문을 생활의 언어와 노래로 기록하는 이정주의 사유음악실";
+      viewUrl.searchParams.set("view", "about");
+      canonicalUrl = viewUrl.href;
     }
-    if (state.activeView === "meaning") {
-      document.title = `${track ? `${track.title} · ` : ""}가사와 의미 | 책이 노래가 될 때`;
-      return;
-    }
-    if (state.activeView === "about") {
-      document.title = "프로젝트 소개 | 책이 노래가 될 때";
-      return;
-    }
-    document.title = "책이 노래가 될 때";
+
+    document.title = documentTitle;
+    setMetaContent('meta[name="description"]', description);
+    setMetaContent('meta[property="og:title"]', socialTitle);
+    setMetaContent('meta[property="og:description"]', description);
+    setMetaContent('meta[property="og:url"]', canonicalUrl);
+    setMetaContent('meta[name="twitter:title"]', socialTitle);
+    setMetaContent('meta[name="twitter:description"]', description);
+    document.querySelector('link[rel="canonical"]')?.setAttribute("href", canonicalUrl);
   };
 
   const updateViewUrl = (view, mode) => {
@@ -807,6 +925,7 @@
     text(elements.playerMessage, track.message);
     text(elements.playerHook, track.hook);
     text(elements.selectionStatus, `선택한 곡은 〈${track.title}〉입니다.`);
+    updateShareButtons(track);
     renderSourceSwitch(track);
     if (state.repeatOne && !["audio", "video"].includes(state.mediaMode)) setRepeatOneState(false);
     renderDetails(track);
@@ -904,6 +1023,7 @@
       if (firstAvailable) selectTrack(firstAvailable.id, { updateUrl: true });
       setActiveView("library", { historyMode: "push", focus: true });
     });
+    for (const button of elements.shareButtons) button.addEventListener("click", shareSelectedTrack);
     elements.shuffleButton.addEventListener("click", () => startPlaylist("shuffle"));
     elements.repeatOneButton.addEventListener("click", () => {
       if (elements.repeatOneButton.disabled) return;
@@ -992,6 +1112,7 @@
     elements.noResults.querySelector("p").textContent = "페이지를 새로고침해 주세요.";
     elements.shuffleButton.disabled = true;
     elements.repeatOneButton.disabled = true;
+    updateShareButtons(null);
     setPlaybackToggle("unavailable", "재생 제어", "노래 목록을 불러오지 못해 재생할 수 없습니다", true);
     setHeaderPlaybackStatus("노래 목록을 불러오지 못했습니다", "notice");
   };
@@ -1037,6 +1158,10 @@
           playCountRecorded: Boolean(playbackQualification?.counted),
         }),
         parseYoutubeId,
+        getSharePayload: () => {
+          const track = selectedTrack();
+          return track ? sharePayloadForTrack(track) : null;
+        },
         selectTrack: (id) => selectTrack(String(id).padStart(2, "0"), { updateUrl: false }),
         startPlaylist,
         setView: (view) => setActiveView(view, { resetScroll: false, announce: false }),
