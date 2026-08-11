@@ -26,7 +26,7 @@
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <link rel="manifest" href="./site.webmanifest">
   <link rel="preload" href="./fonts/PretendardVariable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="./styles.css?v=20260811-share2">
+  <link rel="stylesheet" href="./styles.css?v=20260811-personal1">
   <title>책이 노래가 될 때</title>
 </head>
 <body>
@@ -190,6 +190,46 @@
         <p class="result-count" id="result-count" aria-live="polite"></p>
       </div>
 
+      <section class="personal-library" id="personal-library" aria-labelledby="personal-library-heading">
+        <div class="personal-library-header">
+          <div>
+            <p class="personal-library-kicker">로그인 없이 사용하는 개인 보관함</p>
+            <h3 id="personal-library-heading" tabindex="-1">나만의 노래 기록</h3>
+            <p class="personal-library-privacy">
+              마음에 담은 노래와 최근 들은 노래는 이 기기에만 저장되며 서버로 전송되지 않습니다.
+            </p>
+          </div>
+          <button class="clear-personal-library-button" id="clear-personal-library-button" type="button" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5"/></svg>
+            이 기기의 감상 기록 지우기
+          </button>
+        </div>
+
+        <p class="personal-library-status" id="personal-library-status" role="status" aria-live="polite" aria-atomic="true"></p>
+
+        <div class="personal-library-grid">
+          <section class="personal-collection" aria-labelledby="favorite-tracks-heading">
+            <div class="personal-collection-heading">
+              <h4 id="favorite-tracks-heading">마음에 담은 노래</h4>
+              <span id="favorite-track-count">0곡</span>
+            </div>
+            <div class="personal-track-list" id="favorite-track-list">
+              <p class="personal-empty">아직 마음에 담은 노래가 없습니다.</p>
+            </div>
+          </section>
+
+          <section class="personal-collection" aria-labelledby="recent-tracks-heading">
+            <div class="personal-collection-heading">
+              <h4 id="recent-tracks-heading">최근 들은 노래</h4>
+              <span id="recent-track-count">0곡</span>
+            </div>
+            <div class="personal-track-list" id="recent-track-list">
+              <p class="personal-empty">노래를 재생하면 최근 들은 순서로 표시됩니다.</p>
+            </div>
+          </section>
+        </div>
+      </section>
+
       <div class="library-tools" role="search">
         <label class="search-field" for="track-search">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.4-4.4m2.4-5.1a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"/></svg>
@@ -215,6 +255,20 @@
         <p>검색어를 줄이거나 재생 상태를 ‘전체 노래’로 바꿔 보세요.</p>
       </div>
     </section>
+
+    <dialog class="clear-personal-library-dialog" id="clear-personal-library-dialog" aria-labelledby="clear-personal-library-heading" aria-describedby="clear-personal-library-description">
+      <div class="clear-personal-library-content">
+        <p class="personal-library-kicker">이 기기의 개인 기록</p>
+        <h2 id="clear-personal-library-heading">감상 기록을 모두 지울까요?</h2>
+        <p id="clear-personal-library-description">
+          마음에 담은 노래와 최근 들은 노래가 이 기기에서 모두 삭제됩니다. 공개 재생수에는 영향을 주지 않습니다.
+        </p>
+        <div class="clear-personal-library-actions">
+          <button class="button button-secondary" id="cancel-clear-personal-library" type="button">취소</button>
+          <button class="button clear-personal-library-confirm" id="confirm-clear-personal-library" type="button">모두 지우기</button>
+        </div>
+      </div>
+    </dialog>
 
     <section class="interpretation section-shell view-panel" id="interpretation" data-view-panel="meaning" aria-labelledby="interpretation-heading" hidden>
       <div class="section-heading">
@@ -298,6 +352,6 @@
   </footer>
 
   <noscript>이 웹사이트에서 노래 목록을 살펴보려면 JavaScript를 켜 주세요.</noscript>
-  <script src="./app.js?v=20260811-share2" defer></script>
+  <script src="./app.js?v=20260811-personal1" defer></script>
 </body>
 </html>

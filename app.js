@@ -15,6 +15,11 @@
     activeView: "home",
     playCounts: {},
     playCountsStatus: "loading",
+    personalLibrary: {
+      favorites: [],
+      recent: [],
+    },
+    personalStorageAvailable: true,
   };
 
   const VIEW_LABELS = {
@@ -27,6 +32,8 @@
   const PLAY_COUNTS_ENDPOINT = "https://book-song-plays-api.vercel.app/api/plays";
   const PLAY_QUALIFICATION_SECONDS = 30;
   const PLAY_RETRY_DELAYS = [3000, 10000];
+  const PERSONAL_LIBRARY_KEY = "book-song:personal-library:v1";
+  const RECENT_TRACK_LIMIT = 6;
   const playCountFormatter = new Intl.NumberFormat("ko-KR");
   let playbackQualification = null;
   let shareStatusTimer = null;
@@ -74,6 +81,16 @@
     trackGrid: document.querySelector("#track-grid"),
     resultCount: document.querySelector("#result-count"),
     noResults: document.querySelector("#no-results"),
+    personalLibraryHeading: document.querySelector("#personal-library-heading"),
+    personalLibraryStatus: document.querySelector("#personal-library-status"),
+    favoriteTrackList: document.querySelector("#favorite-track-list"),
+    favoriteTrackCount: document.querySelector("#favorite-track-count"),
+    recentTrackList: document.querySelector("#recent-track-list"),
+    recentTrackCount: document.querySelector("#recent-track-count"),
+    clearPersonalLibraryButton: document.querySelector("#clear-personal-library-button"),
+    clearPersonalLibraryDialog: document.querySelector("#clear-personal-library-dialog"),
+    confirmClearPersonalLibrary: document.querySelector("#confirm-clear-personal-library"),
+    cancelClearPersonalLibrary: document.querySelector("#cancel-clear-personal-library"),
     detailNumber: document.querySelector("#detail-number"),
     detailTitle: document.querySelector("#detail-title"),
     detailSource: document.querySelector("#detail-source"),
@@ -224,6 +241,201 @@
     }
   };
 
+  const emptyPersonalLibrary = () => ({ favorites: [], recent: [] });
+
+  const normalizePersonalTrackIds = (values) => {
+    if (!Array.isArray(values)) return [];
+    const validIds = new Set(state.tracks.map((track) => track.id));
+    const normalizedIds = [];
+    for (const value of values) {
+      const normalized = normalizeRequestedTrackId(String(value));
+      if (!validIds.has(normalized) || normalizedIds.includes(normalized)) continue;
+      normalizedIds.push(normalized);
+    }
+    return normalizedIds;
+  };
+
+  const parsePersonalLibrary = (rawValue) => {
+    if (!rawValue) return emptyPersonalLibrary();
+    try {
+      const parsed = JSON.parse(rawValue);
+      return {
+        favorites: normalizePersonalTrackIds(parsed?.favorites),
+        recent: normalizePersonalTrackIds(parsed?.recent).slice(0, RECENT_TRACK_LIMIT),
+      };
+    } catch (error) {
+      return emptyPersonalLibrary();
+    }
+  };
+
+  const personalLibraryIsEmpty = () =>
+    state.personalLibrary.favorites.length === 0 && state.personalLibrary.recent.length === 0;
+
+  const setPersonalLibraryStatus = (message, kind = "notice") => {
+    text(elements.personalLibraryStatus, message);
+    if (message) elements.personalLibraryStatus.dataset.kind = kind;
+    else elements.personalLibraryStatus.removeAttribute("data-kind");
+  };
+
+  const loadPersonalLibrary = () => {
+    try {
+      state.personalLibrary = parsePersonalLibrary(localStorage.getItem(PERSONAL_LIBRARY_KEY));
+      state.personalStorageAvailable = true;
+    } catch (error) {
+      state.personalLibrary = emptyPersonalLibrary();
+      state.personalStorageAvailable = false;
+    }
+  };
+
+  const persistPersonalLibrary = () => {
+    try {
+      if (personalLibraryIsEmpty()) {
+        localStorage.removeItem(PERSONAL_LIBRARY_KEY);
+      } else {
+        localStorage.setItem(PERSONAL_LIBRARY_KEY, JSON.stringify(state.personalLibrary));
+      }
+      state.personalStorageAvailable = true;
+      return true;
+    } catch (error) {
+      state.personalStorageAvailable = false;
+      return false;
+    }
+  };
+
+  const createPersonalTrackButton = (track) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "personal-track-button";
+    button.dataset.personalTrackId = track.id;
+
+    const number = document.createElement("span");
+    number.className = "personal-track-number";
+    number.textContent = `TRACK ${track.id}`;
+    const title = document.createElement("span");
+    title.className = "personal-track-title";
+    title.textContent = track.title;
+    button.append(number, title);
+
+    button.addEventListener("click", () => {
+      selectTrack(track.id, { updateUrl: true });
+      document.querySelector("#listen").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return button;
+  };
+
+  const renderPersonalTrackList = (container, ids, emptyMessage) => {
+    const tracks = ids
+      .map((id) => state.tracks.find((track) => track.id === id))
+      .filter(Boolean);
+    if (tracks.length > 0) {
+      container.replaceChildren(...tracks.map(createPersonalTrackButton));
+      return;
+    }
+    const empty = document.createElement("p");
+    empty.className = "personal-empty";
+    empty.textContent = emptyMessage;
+    container.replaceChildren(empty);
+  };
+
+  const syncFavoriteButtons = () => {
+    const favoriteIds = new Set(state.personalLibrary.favorites);
+    for (const favoriteButton of document.querySelectorAll("[data-favorite-track]")) {
+      const track = state.tracks.find((item) => item.id === favoriteButton.dataset.favoriteTrack);
+      if (!track) continue;
+      const isFavorite = favoriteIds.has(track.id);
+      const label = isFavorite ? "마음에서 빼기" : "마음에 담기";
+      favoriteButton.setAttribute("aria-pressed", isFavorite ? "true" : "false");
+      favoriteButton.setAttribute("aria-label", `${label}: 〈${track.title}〉`);
+      const labelElement = favoriteButton.querySelector("[data-favorite-label]");
+      if (labelElement) labelElement.textContent = label;
+    }
+  };
+
+  const renderPersonalLibrary = () => {
+    renderPersonalTrackList(
+      elements.favoriteTrackList,
+      state.personalLibrary.favorites,
+      "아직 마음에 담은 노래가 없습니다.",
+    );
+    renderPersonalTrackList(
+      elements.recentTrackList,
+      state.personalLibrary.recent,
+      "노래를 재생하면 최근 들은 순서로 표시됩니다.",
+    );
+    text(elements.favoriteTrackCount, `${state.personalLibrary.favorites.length}곡`);
+    text(elements.recentTrackCount, `${state.personalLibrary.recent.length}곡`);
+    elements.clearPersonalLibraryButton.disabled = personalLibraryIsEmpty();
+    syncFavoriteButtons();
+  };
+
+  const toggleFavorite = (trackId) => {
+    const track = state.tracks.find((item) => item.id === trackId);
+    if (!track) return;
+    const wasFavorite = state.personalLibrary.favorites.includes(track.id);
+    state.personalLibrary.favorites = wasFavorite
+      ? state.personalLibrary.favorites.filter((id) => id !== track.id)
+      : [track.id, ...state.personalLibrary.favorites];
+    const saved = persistPersonalLibrary();
+    renderPersonalLibrary();
+    const action = wasFavorite ? "마음에서 뺐습니다" : "마음에 담았습니다";
+    setPersonalLibraryStatus(
+      saved
+        ? `〈${track.title}〉: ${action}.`
+        : `〈${track.title}〉: 현재 화면에서 ${action}. 브라우저 설정 때문에 다음 방문에는 유지되지 않을 수 있습니다.`,
+      saved ? "notice" : "warning",
+    );
+  };
+
+  const recordRecentTrack = (trackId) => {
+    const track = state.tracks.find((item) => item.id === trackId);
+    if (!track) return;
+    const recent = [track.id, ...state.personalLibrary.recent.filter((id) => id !== track.id)]
+      .slice(0, RECENT_TRACK_LIMIT);
+    if (recent.every((id, index) => id === state.personalLibrary.recent[index])) return;
+    state.personalLibrary.recent = recent;
+    const saved = persistPersonalLibrary();
+    renderPersonalLibrary();
+    if (!saved) {
+      setPersonalLibraryStatus(
+        "브라우저 설정 때문에 최근 들은 노래를 이 기기에 저장하지 못했습니다. 현재 화면에서만 유지됩니다.",
+        "warning",
+      );
+    }
+  };
+
+  const clearPersonalLibrary = () => {
+    state.personalLibrary = emptyPersonalLibrary();
+    const cleared = persistPersonalLibrary();
+    renderPersonalLibrary();
+    setPersonalLibraryStatus(
+      cleared
+        ? "이 기기의 마음에 담은 노래와 최근 들은 노래를 모두 지웠습니다."
+        : "현재 화면의 기록은 지웠지만 브라우저 저장소를 변경하지 못했습니다.",
+      cleared ? "notice" : "warning",
+    );
+  };
+
+  const openClearPersonalLibraryDialog = () => {
+    if (elements.clearPersonalLibraryButton.disabled) return;
+    if (typeof elements.clearPersonalLibraryDialog.showModal === "function") {
+      elements.clearPersonalLibraryDialog.showModal();
+      elements.cancelClearPersonalLibrary.focus();
+      return;
+    }
+    if (window.confirm("마음에 담은 노래와 최근 들은 노래를 이 기기에서 모두 지울까요?")) {
+      clearPersonalLibrary();
+      elements.personalLibraryHeading.focus({ preventScroll: true });
+    }
+  };
+
+  const syncPersonalLibraryFromStorage = (event) => {
+    if (event.key !== PERSONAL_LIBRARY_KEY || state.tracks.length === 0) return;
+    state.personalLibrary = parsePersonalLibrary(event.newValue);
+    state.personalStorageAvailable = true;
+    renderPersonalLibrary();
+    setPersonalLibraryStatus("다른 탭에서 바뀐 이 기기의 노래 기록을 반영했습니다.");
+  };
+
   const normalizeView = (value) => (Object.hasOwn(VIEW_LABELS, value) ? value : "home");
 
   const viewFromLocation = () => {
@@ -308,6 +520,11 @@
     elements.siteHeader.dataset.condensed = next ? "true" : "false";
   };
 
+  const updateHeaderMetrics = () => {
+    const height = Math.ceil(elements.siteHeader.getBoundingClientRect().height);
+    document.documentElement.style.setProperty("--site-header-height", `${height}px`);
+  };
+
   const bindResponsiveHeader = () => {
     let scheduled = false;
     const schedule = () => {
@@ -315,12 +532,17 @@
       scheduled = true;
       window.requestAnimationFrame(() => {
         updateHeaderDensity();
+        updateHeaderMetrics();
         scheduled = false;
       });
     };
     window.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule);
+    if (typeof ResizeObserver === "function") {
+      new ResizeObserver(schedule).observe(elements.siteHeader);
+    }
     updateHeaderDensity();
+    updateHeaderMetrics();
   };
 
   const setActiveView = (value, options = {}) => {
@@ -698,13 +920,17 @@
 
   const createTrackCard = (track) => {
     const status = mediaStatus(track.id);
+    const shell = document.createElement("article");
+    shell.className = "track-card-shell";
+    shell.style.setProperty("--card-accent", track.theme.accent);
+    shell.style.setProperty("--card-soft", track.theme.soft);
+
     const button = document.createElement("button");
     button.type = "button";
     button.className = "track-card";
     button.dataset.trackId = track.id;
     button.setAttribute("aria-current", track.id === state.selectedId ? "true" : "false");
-    button.style.setProperty("--card-accent", track.theme.accent);
-    button.style.setProperty("--card-soft", track.theme.soft);
+
 
     const top = document.createElement("div");
     top.className = "track-card-top";
@@ -741,7 +967,25 @@
       selectTrack(track.id, { updateUrl: true });
       document.querySelector("#listen").scrollIntoView({ behavior: "smooth", block: "start" });
     });
-    return button;
+
+    const favoriteButton = document.createElement("button");
+    favoriteButton.type = "button";
+    favoriteButton.className = "track-favorite-button";
+    favoriteButton.dataset.favoriteTrack = track.id;
+    favoriteButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg><span data-favorite-label></span>';
+    const isFavorite = state.personalLibrary.favorites.includes(track.id);
+    const favoriteLabel = isFavorite ? "마음에서 빼기" : "마음에 담기";
+    favoriteButton.setAttribute("aria-pressed", isFavorite ? "true" : "false");
+    favoriteButton.setAttribute("aria-label", `${favoriteLabel}: 〈${track.title}〉`);
+    favoriteButton.querySelector("[data-favorite-label]").textContent = favoriteLabel;
+    favoriteButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleFavorite(track.id);
+    });
+
+    shell.append(button, favoriteButton);
+    return shell;
   };
 
   const renderLibrary = () => {
@@ -1017,6 +1261,17 @@
       state.filter = event.target.value;
       renderLibrary();
     });
+    elements.clearPersonalLibraryButton.addEventListener("click", openClearPersonalLibraryDialog);
+    elements.cancelClearPersonalLibrary.addEventListener("click", () => {
+      elements.clearPersonalLibraryDialog.close("cancel");
+      elements.clearPersonalLibraryButton.focus({ preventScroll: true });
+    });
+    elements.confirmClearPersonalLibrary.addEventListener("click", () => {
+      clearPersonalLibrary();
+      elements.clearPersonalLibraryDialog.close("cleared");
+      elements.personalLibraryHeading.focus({ preventScroll: true });
+    });
+    window.addEventListener("storage", syncPersonalLibraryFromStorage);
     elements.libraryJump.addEventListener("click", () => {
       elements.librarySection.scrollIntoView({ block: "start" });
       window.requestAnimationFrame(() => focusTemporarily(elements.libraryHeading));
@@ -1071,6 +1326,7 @@
         updatePlaylistControls();
       });
       player.addEventListener("playing", () => {
+        recordRecentTrack(state.selectedId);
         const session = qualificationFor(player);
         session.lastMediaTime = Number(player.currentTime) || 0;
         updatePlaylistControls();
@@ -1133,6 +1389,7 @@
       if (!tracksResponse.ok || !mediaResponse.ok) throw new Error("data-load-failed");
       state.tracks = await tracksResponse.json();
       state.media = await mediaResponse.json();
+      loadPersonalLibrary();
       text(elements.songCount, String(state.tracks.length));
       text(elements.bookCount, String(new Set(state.tracks.map((track) => `${track.author}:${track.book}`)).size));
       const requested = new URL(window.location.href).searchParams.get("track");
@@ -1141,6 +1398,13 @@
       if (initialTrack) {
         const shouldNormalizeUrl = requested !== null && requested !== initialTrack.id;
         selectTrack(initialTrack.id, { updateUrl: shouldNormalizeUrl });
+      }
+      renderPersonalLibrary();
+      if (!state.personalStorageAvailable) {
+        setPersonalLibraryStatus(
+          "브라우저 설정 때문에 개인 보관함을 이 기기에 저장할 수 없습니다. 현재 화면에서만 사용할 수 있습니다.",
+          "warning",
+        );
       }
       void loadPlayCounts();
       window.__BOOK_SONG_READY__ = true;
@@ -1157,6 +1421,9 @@
           activeView: state.activeView,
           playCounts: { ...state.playCounts },
           playCountsStatus: state.playCountsStatus,
+          favorites: [...state.personalLibrary.favorites],
+          recent: [...state.personalLibrary.recent],
+          personalStorageAvailable: state.personalStorageAvailable,
           qualifyingTrackId: playbackQualification?.trackId || null,
           qualifiedSeconds: playbackQualification?.playedSeconds || 0,
           playCountRecorded: Boolean(playbackQualification?.counted),
