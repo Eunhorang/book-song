@@ -1,4 +1,4 @@
-const TRACK_ID = /^(?:0[1-9]|1[0-2])$/;
+const TRACK_ID = /^(?:0[1-9]|1[0-3])$/;
 const EVENT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const LOCAL_ORIGIN = /^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/;
 const PRODUCTION_ORIGIN = "https://eunhorang.github.io";
@@ -61,7 +61,7 @@ const rpc = async (name, payload) => {
 
 const normalizedCounts = (rows) => {
   const counts = Object.fromEntries(
-    Array.from({ length: 12 }, (_, index) => [String(index + 1).padStart(2, "0"), 0]),
+    Array.from({ length: 13 }, (_, index) => [String(index + 1).padStart(2, "0"), 0]),
   );
   for (const row of Array.isArray(rows) ? rows : []) {
     if (TRACK_ID.test(row.track_id) && Number.isSafeInteger(Number(row.play_count))) {

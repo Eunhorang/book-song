@@ -122,12 +122,16 @@ def parse_note(path: Path) -> dict:
         raise ValueError("가사 또는 의미표가 없습니다.")
     number=int(meta.get("song_no") or re.match(r"(\d{2})-",path.name).group(1))
     title=meta.get("song_title") or re.sub(r"^\d{2}-|\.md$", "", path.name)
+    author=meta.get("source_author", "")
+    adaptor=meta.get("source_adaptor", "")
+    if adaptor:
+        author=f"{author} · {adaptor} 편역" if author else f"{adaptor} 편역"
     palette=PALETTES[(number-1)%len(PALETTES)]
     return {
         "id": f"{number:02d}",
         "title": title,
         "book": meta.get("source_book", ""),
-        "author": meta.get("source_author", ""),
+        "author": author,
         "question": bullet(basic,"중심 질문"),
         "message": bullet(basic,"핵심 메시지"),
         "hook": chorus_hook(lyrics),
