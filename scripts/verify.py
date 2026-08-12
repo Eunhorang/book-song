@@ -91,6 +91,11 @@ def main() -> None:
     for marker in ['<span class="hero-title-line">읽고 남은 마음을</span>','<span class="hero-title-line">노래로 기억하는 공간</span>']:
         if marker not in html:
             errors.append(f"첫 화면 대표 문구 누락: {marker}")
+    for marker in ['class="eyebrow hero-meta"','<span id="song-count">0</span>곡','class="hero-library-link"']:
+        if marker not in html:
+            errors.append(f"P0-2 첫 화면 정보 위계 누락: {marker}")
+    if 'class="hero-stats"' in html or 'id="book-count"' in html:
+        errors.append("P0-2에서 제거한 다중 통계 블록이 첫 화면에 남아 있습니다.")
     copyright_notice='© 2026 이정주. 감상 링크 공유는 가능하며, 가사·해설·사이트 구성의 무단 복제·재배포·상업적 이용은 허용되지 않습니다.'
     if html.count(copyright_notice) != 1 or 'class="footer-copyright"' not in html:
         errors.append("푸터 저작권 문구 누락 또는 중복")
@@ -124,6 +129,26 @@ def main() -> None:
         errors.append("본문 가독성 글꼴 적용 누락")
     if 'font-family: "Gaegu"' in stylesheet:
         errors.append("사용 중지한 손글씨 글꼴이 CSS에 남아 있습니다.")
+    for marker in [
+        '--radius-sm: 6px',
+        '--radius-md: 10px',
+        '--radius-lg: 14px',
+        '--shadow-raised: 0 10px 28px rgba(52, 41, 28, 0.08)',
+        '--shadow-dialog: 0 18px 48px rgba(53, 29, 7, 0.18)',
+    ]:
+        if marker not in stylesheet:
+            errors.append(f"P0-1 표면 체계 누락: {marker}")
+    if "--radius-xl" in stylesheet or re.search(r"--shadow(?:-soft)?\s*:",stylesheet):
+        errors.append("P0-1 이전의 과도한 모서리·그림자 토큰이 남아 있습니다.")
+    if stylesheet.count("border-radius: 999px;") != 4:
+        errors.append("P0-1 캡슐형 요소가 상태·개수 배지 외에 사용되고 있습니다.")
+    if len(re.findall(r"^\s*box-shadow\s*:",stylesheet,re.M)) != 3:
+        errors.append("P0-1 그림자가 선택 곡·공유 알림·확인 대화상자 외에 사용되고 있습니다.")
+    for marker in [".eyebrow.hero-meta", ".hero-library-link", "min-height: 560px"]:
+        if marker not in stylesheet:
+            errors.append(f"P0-2 첫 화면 위계 CSS 누락: {marker}")
+    if ".hero-stats" in stylesheet:
+        errors.append("P0-2에서 제거한 첫 화면 통계 CSS가 남아 있습니다.")
     javascript=(base/"app.js").read_text(encoding="utf-8")
     if "playAllButton" in javascript:
         errors.append("삭제 요청된 모든 노래 재생 버튼 JavaScript 참조가 남아 있습니다.")

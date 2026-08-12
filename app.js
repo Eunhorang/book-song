@@ -49,7 +49,6 @@
   const elements = {
     siteHeader: document.querySelector(".site-header"),
     songCount: document.querySelector("#song-count"),
-    bookCount: document.querySelector("#book-count"),
     heroListen: document.querySelector("#hero-listen"),
     playerCard: document.querySelector("#player-card"),
     selectionStatus: document.querySelector("#selection-status"),
@@ -1805,7 +1804,6 @@
       loadPersonalLibrary();
       loadPersonalReflections();
       text(elements.songCount, String(state.tracks.length));
-      text(elements.bookCount, String(new Set(state.tracks.map((track) => `${track.author}:${track.book}`)).size));
       const requested = new URL(window.location.href).searchParams.get("track");
       const normalizedRequested = normalizeRequestedTrackId(requested);
       const initialTrack = state.tracks.find((track) => track.id === normalizedRequested) || state.tracks[0];

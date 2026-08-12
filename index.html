@@ -26,7 +26,7 @@
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <link rel="manifest" href="./site.webmanifest">
   <link rel="preload" href="./fonts/PretendardVariable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="./styles.css?v=20260812-journal1">
+  <link rel="stylesheet" href="./styles.css?v=20260812-p02">
   <title>책이 노래가 될 때</title>
 </head>
 <body>
@@ -82,24 +82,22 @@
     <section class="hero view-panel" id="top" data-view-panel="home" aria-labelledby="hero-title">
       <div class="hero-inner">
         <div class="hero-copy">
-          <p class="eyebrow">BOOKS INTO SONGS</p>
+          <p class="eyebrow hero-meta">BOOKS INTO SONGS <span aria-hidden="true">·</span> <span><span id="song-count">0</span>곡</span></p>
           <h1 id="hero-title">
             <span class="hero-title-line">읽고 남은 마음을</span>
             <span class="hero-title-line">노래로 기억하는 공간</span>
           </h1>
-          <p class="hero-lead">책을 요약하지 않습니다. 읽고 멈춰 서게 된 질문을 생활의 언어로 쓰고, 오래 곁에 둘 수 있는 노래로 기록합니다.</p>
+          <p class="hero-lead">책을 요약하기보다, 읽고 멈춰 서게 된 질문을 생활의 언어와 오래 곁에 둘 노래로 기록합니다.</p>
           <div class="hero-actions">
             <button class="button button-primary" id="hero-listen" type="button">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z"/></svg>
-              첫 번째 노래 만나기
+              첫 번째 노래 듣기
             </button>
-            <a class="button button-secondary" href="?view=library" data-view-link="library">전체 노래 보기</a>
+            <a class="hero-library-link" href="?view=library" data-view-link="library">
+              전체 노래 보기
+              <span aria-hidden="true">→</span>
+            </a>
           </div>
-          <dl class="hero-stats" aria-label="아카이브 현황">
-            <div><dt id="song-count">0</dt><dd>노래</dd></div>
-            <div><dt id="book-count">0</dt><dd>책</dd></div>
-            <div><dt>가사·해석</dt><dd>한곳에</dd></div>
-          </dl>
         </div>
 
         <div class="hero-art">
@@ -437,6 +435,6 @@
   </footer>
 
   <noscript>이 웹사이트에서 노래 목록을 살펴보려면 JavaScript를 켜 주세요.</noscript>
-  <script src="./app.js?v=20260812-journal1" defer></script>
+  <script src="./app.js?v=20260812-p02" defer></script>
 </body>
 </html>
