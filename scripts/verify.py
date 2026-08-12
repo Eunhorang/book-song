@@ -88,7 +88,7 @@ def main() -> None:
         errors.append("CSS와 JavaScript 캐시 버전이 없거나 서로 다릅니다.")
     if len(re.findall(r'</svg>\s*이 노래 공유하기\s*</button>', html)) != 2:
         errors.append("곡별 공유 버튼 문구가 두 화면에 정확히 한 번씩 있지 않습니다.")
-    for marker in ['<span class="hero-title-line">읽고 남은 마음을</span>','<span class="hero-title-line">노래로 기록합니다.</span>']:
+    for marker in ['<span class="hero-title-line">읽고 남은 마음을</span>','<span class="hero-title-line">노래로 기억하는 공간</span>']:
         if marker not in html:
             errors.append(f"첫 화면 대표 문구 누락: {marker}")
     copyright_notice='© 2026 이정주. 감상 링크 공유는 가능하며, 가사·해설·사이트 구성의 무단 복제·재배포·상업적 이용은 허용되지 않습니다.'
