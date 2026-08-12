@@ -31,6 +31,7 @@
     meaning: "가사와 의미",
     about: "프로젝트 소개",
   };
+  const EDITORIAL_SECTION_HASHES = new Set(["#lyrics-section", "#meaning-section", "#notes-section"]);
 
   const PLAY_COUNTS_ENDPOINT = "https://book-song-plays-api.vercel.app/api/plays";
   const PLAY_QUALIFICATION_SECONDS = 30;
@@ -121,8 +122,7 @@
     detailMessage: document.querySelector("#detail-message"),
     detailNarration: document.querySelector("#detail-narration"),
     detailEnding: document.querySelector("#detail-ending"),
-    tabs: Array.from(document.querySelectorAll('[role="tab"]')),
-    panels: Array.from(document.querySelectorAll('[role="tabpanel"]')),
+    editorialJournalLink: document.querySelector("#editorial-journal-link"),
     viewStatus: document.querySelector("#view-status"),
     viewLinks: Array.from(document.querySelectorAll("[data-view-link]")),
     viewPanels: Array.from(document.querySelectorAll("[data-view-panel]")),
@@ -834,7 +834,7 @@
     } else if (state.activeView === "about") {
       documentTitle = "프로젝트 소개 | 책이 노래가 될 때";
       socialTitle = documentTitle;
-      description = "한 권이 남긴 질문을 생활의 언어와 노래로 기록하는 이정주의 사유음악실";
+      description = "한 권이 남긴 질문을 생활의 언어와 노래로 기록하는 사유음악실";
       viewUrl.searchParams.set("view", "about");
       canonicalUrl = viewUrl.href;
     }
@@ -851,8 +851,9 @@
 
   const updateViewUrl = (view, mode) => {
     const url = new URL(window.location.href);
+    const preserveEditorialHash = view === "meaning" && EDITORIAL_SECTION_HASHES.has(url.hash);
     url.searchParams.set("view", view);
-    url.hash = "";
+    if (!preserveEditorialHash) url.hash = "";
     window.history[mode === "push" ? "pushState" : "replaceState"]({ view }, "", url);
   };
 
@@ -866,6 +867,26 @@
   const focusViewHeading = (view) => {
     const panel = elements.viewPanels.find((item) => item.dataset.viewPanel === view && !item.hidden);
     focusTemporarily(panel?.querySelector("h1, h2"));
+  };
+
+  const restoreEditorialSectionFromLocation = async () => {
+    if (state.activeView !== "meaning" || !EDITORIAL_SECTION_HASHES.has(window.location.hash)) return false;
+    const target = document.querySelector(window.location.hash);
+    if (!target || target.closest("[hidden]")) return false;
+    const nextLayout = () => new Promise((resolve) => window.requestAnimationFrame(() => window.requestAnimationFrame(resolve)));
+    const alignToTarget = () => {
+      updateHeaderDensity();
+      updateHeaderMetrics();
+      const headerHeight = Math.ceil(elements.siteHeader.getBoundingClientRect().height);
+      const targetTop = target.getBoundingClientRect().top + window.scrollY - headerHeight - 24;
+      window.scrollTo({ top: Math.max(0, targetTop), left: 0, behavior: "instant" });
+    };
+    await nextLayout();
+    alignToTarget();
+    await nextLayout();
+    alignToTarget();
+    focusTemporarily(target.querySelector("h2, h3"));
+    return true;
   };
 
   const updateHeaderDensity = () => {
@@ -924,8 +945,11 @@
         setActiveView(link.dataset.viewLink, { historyMode: "push", focus: true });
       });
     }
-    window.addEventListener("popstate", () => {
-      setActiveView(viewFromLocation(), { focus: true });
+    window.addEventListener("popstate", async () => {
+      const view = viewFromLocation();
+      const restoreEditorialSection = view === "meaning" && EDITORIAL_SECTION_HASHES.has(window.location.hash);
+      setActiveView(view, { focus: !restoreEditorialSection, resetScroll: !restoreEditorialSection });
+      if (restoreEditorialSection) await restoreEditorialSectionFromLocation();
     });
   };
 
@@ -1504,17 +1528,23 @@
   };
 
   const renderMeanings = (track) => {
-    const cards = track.meanings.map((item) => {
-      const article = document.createElement("article");
-      article.className = "meaning-card";
+    const entries = track.meanings.map((item, index) => {
+      const entry = document.createElement("li");
+      entry.className = "meaning-entry";
+      const number = document.createElement("span");
+      number.className = "meaning-entry-number";
+      number.setAttribute("aria-hidden", "true");
+      number.textContent = String(index + 1).padStart(2, "0");
+      const content = document.createElement("div");
       const quote = document.createElement("blockquote");
       quote.textContent = item.lyric;
       const meaning = document.createElement("p");
       meaning.textContent = item.meaning;
-      article.append(quote, meaning);
-      return article;
+      content.append(quote, meaning);
+      entry.append(number, content);
+      return entry;
     });
-    elements.meaningGrid.replaceChildren(...cards);
+    elements.meaningGrid.replaceChildren(...entries);
   };
 
   const renderDetails = (track) => {
@@ -1526,6 +1556,7 @@
     text(elements.detailMessage, track.message);
     text(elements.detailNarration, track.narration);
     text(elements.detailEnding, track.endingQuestion);
+    elements.editorialJournalLink.href = `?view=journal&track=${track.id}`;
     renderMeanings(track);
   };
 
@@ -1606,30 +1637,19 @@
     playPlaylistItem();
   };
 
-  const activateTab = (tab) => {
-    for (const item of elements.tabs) {
-      const active = item === tab;
-      item.setAttribute("aria-selected", active ? "true" : "false");
-      item.tabIndex = active ? 0 : -1;
-      const panel = document.querySelector(`#${item.getAttribute("aria-controls")}`);
-      panel.hidden = !active;
-    }
-  };
-
-  const bindTabs = () => {
-    elements.tabs.forEach((tab, index) => {
-      tab.addEventListener("click", () => activateTab(tab));
-      tab.addEventListener("keydown", (event) => {
-        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-        event.preventDefault();
-        let next = index;
-        if (event.key === "ArrowRight") next = (index + 1) % elements.tabs.length;
-        if (event.key === "ArrowLeft") next = (index - 1 + elements.tabs.length) % elements.tabs.length;
-        if (event.key === "Home") next = 0;
-        if (event.key === "End") next = elements.tabs.length - 1;
-        activateTab(elements.tabs[next]);
-        elements.tabs[next].focus();
+  const openSelectedTrackJournal = (event) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    if (!requestJournalTrackSelection(state.selectedId)) return;
+    setActiveView("journal", { historyMode: "push", focus: false });
+    window.requestAnimationFrame(() => {
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      elements.journalReflectionInput.scrollIntoView({
+        block: "center",
+        behavior: reducedMotion ? "auto" : "smooth",
       });
+      elements.journalReflectionInput.focus({ preventScroll: true });
+      text(elements.viewStatus, `〈${selectedTrack()?.title || "선택한 노래"}〉에 대한 한 줄 기록으로 이동했습니다.`);
     });
   };
 
@@ -1689,6 +1709,7 @@
       setActiveView("library", { historyMode: "push", focus: true });
     });
     for (const button of elements.shareButtons) button.addEventListener("click", shareSelectedTrack);
+    elements.editorialJournalLink.addEventListener("click", openSelectedTrackJournal);
     elements.shuffleButton.addEventListener("click", () => startPlaylist("shuffle"));
     elements.repeatOneButton.addEventListener("click", () => {
       if (elements.repeatOneButton.disabled) return;
@@ -1764,7 +1785,6 @@
     bindLocalPlayer(elements.mainPlayer, "audio");
     bindLocalPlayer(elements.videoPlayer, "video");
     bindViewNavigation();
-    bindTabs();
     bindResponsiveHeader();
   };
 
@@ -1814,6 +1834,7 @@
         );
       }
       void loadPlayCounts();
+      await restoreEditorialSectionFromLocation();
       window.__BOOK_SONG_READY__ = true;
       window.__BOOK_SONG_APP__ = {
         getState: () => ({

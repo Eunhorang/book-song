@@ -113,7 +113,7 @@ def main() -> None:
     if '<video id="main-player"' in html:
         errors.append("기본 플레이어가 영상 요소로 남아 있습니다.")
     stylesheet=(base/"styles.css").read_text(encoding="utf-8")
-    for marker in [".site-header", "position: sticky", '--site-header-height', '.site-header[data-condensed="true"]', ".header-playback", ".repeat-one-button", '.playlist-status[data-playback-state="playing"]', 'animation: playback-record-spin', 'animation-play-state: paused', 'animation-play-state: running', '@keyframes playback-record-spin', '@media (prefers-reduced-motion: reduce)', 'animation: none !important', '--fade-content-duration: 260ms', 'animation: fade-content-enter var(--fade-content-duration)', '@keyframes fade-content-enter', ".playback-toggle-button", '[data-action="pause"]', ':not([aria-pressed="true"])', '-webkit-text-fill-color: currentColor', ".hero-title-line", '.media-stage[data-media-kind="audio"]', "#video-player", 'font-family: "Pretendard"', 'url("./fonts/PretendardVariable.woff2")', '.hero-brand-image', 'background-image: url("./assets/brand-main.jpg")', '.section-jump', '.player-detail-link', '.track-share-button', '.player-actions', '.share-status', '.library-journal-card', '.journal', '.journal-summary', '.journal-privacy-note', '.personal-library', '.personal-track-list', '.personal-track-button', '.personal-track-record-button', '.journal-reflection-form', '.journal-reflection-card', '.journal-management', '.track-list', '.track-row-shell', '.track-row', '.track-row-state', '.track-favorite-button', '.clear-personal-library-dialog', '.track-meta', '.detail-source-group', 'aspect-ratio: 16 / 9', 'color: #756a5f', '.tabs button[aria-selected="true"]']:
+    for marker in [".site-header", "position: sticky", '--site-header-height', '.site-header[data-condensed="true"]', ".header-playback", ".repeat-one-button", '.playlist-status[data-playback-state="playing"]', 'animation: playback-record-spin', 'animation-play-state: paused', 'animation-play-state: running', '@keyframes playback-record-spin', '@media (prefers-reduced-motion: reduce)', 'animation: none !important', '--fade-content-duration: 260ms', 'animation: fade-content-enter var(--fade-content-duration)', '@keyframes fade-content-enter', ".playback-toggle-button", '[data-action="pause"]', ':not([aria-pressed="true"])', '-webkit-text-fill-color: currentColor', ".hero-title-line", '.media-stage[data-media-kind="audio"]', "#video-player", 'font-family: "Pretendard"', 'url("./fonts/PretendardVariable.woff2")', '.hero-brand-image', 'background-image: url("./assets/brand-main.jpg")', '.section-jump', '.player-detail-link', '.track-share-button', '.player-actions', '.share-status', '.library-journal-card', '.journal', '.journal-summary', '.journal-privacy-note', '.personal-library', '.personal-track-list', '.personal-track-button', '.personal-track-record-button', '.journal-reflection-form', '.journal-reflection-card', '.journal-management', '.track-list', '.track-row-shell', '.track-row', '.track-row-state', '.track-favorite-button', '.clear-personal-library-dialog', '.track-meta', 'aspect-ratio: 16 / 9', 'color: #756a5f']:
         if marker not in stylesheet:
             errors.append(f"CSS 필수 표식 누락: {marker}")
     fade_keyframes=re.search(r"@keyframes fade-content-enter\s*\{.*?^\}",stylesheet,re.S|re.M)
@@ -190,6 +190,66 @@ def main() -> None:
         errors.append("P0-4 재생 버튼이 헤더의 유일한 강한 실행 표면으로 유지되지 않았습니다.")
     if ".site-nav a[aria-current=\"page\"]::after" not in stylesheet:
         errors.append("P0-4 현재 메뉴 밑줄 표시가 누락되었습니다.")
+    if "이정주의 사유음악실" in html or "이정주의 사유음악실" in javascript:
+        errors.append("삭제 요청된 이름 포함 사유음악실 문구가 남아 있습니다.")
+    for marker in [
+        "<small>사유음악실</small>",
+        "책에서 건진 질문을 노래로 기록하는 사유음악실",
+        "한 권이 남긴 질문을 생활의 언어와 노래로 기록하는 사유음악실",
+    ]:
+        if marker not in html and marker not in javascript:
+            errors.append(f"이름을 뺀 사유음악실 문구 누락: {marker}")
+    p05_html_markers = [
+        'class="editorial-detail"',
+        'class="editorial-masthead"',
+        'class="editorial-toc"',
+        'id="lyrics-section"',
+        'id="meaning-section"',
+        'id="notes-section"',
+        '<ol class="meaning-list" id="meaning-grid"></ol>',
+        '<dl class="reflection-notes">',
+        'class="editorial-journal-link"',
+        '>나의 기록에 답 남기기<',
+    ]
+    for marker in p05_html_markers:
+        if marker not in html:
+            errors.append(f"P0-5 편집 페이지 구조 누락: {marker}")
+    for legacy_marker in ['class="detail-card"', 'role="tablist"', 'role="tab"', 'role="tabpanel"']:
+        if legacy_marker in html:
+            errors.append(f"P0-5에서 제거한 탭·카드 구조가 남아 있습니다: {legacy_marker}")
+    for marker in [
+        ".editorial-detail",
+        "max-width: 720px",
+        ".editorial-section",
+        ".meaning-entry",
+        ".reflection-note",
+        "scroll-margin-top: calc(var(--site-header-height) + 24px)",
+    ]:
+        if marker not in stylesheet:
+            errors.append(f"P0-5 편집형 읽기 CSS 누락: {marker}")
+    if any(marker in stylesheet for marker in [".meaning-card", ".notes-grid", ".tabs button", ".tab-panel"]):
+        errors.append("P0-5에서 제거한 카드 격자·탭 CSS가 남아 있습니다.")
+    for marker in [
+        'editorialJournalLink: document.querySelector("#editorial-journal-link")',
+        'entry.className = "meaning-entry"',
+        'const openSelectedTrackJournal',
+        'requestJournalTrackSelection(state.selectedId)',
+        'setActiveView("journal", { historyMode: "push", focus: false })',
+        'elements.editorialJournalLink.href = `?view=journal&track=${track.id}`',
+        'const EDITORIAL_SECTION_HASHES = new Set(["#lyrics-section", "#meaning-section", "#notes-section"])',
+        'view === "meaning" && EDITORIAL_SECTION_HASHES.has(url.hash)',
+        'const restoreEditorialSectionFromLocation',
+        'const alignToTarget = () =>',
+        'window.scrollTo({ top: Math.max(0, targetTop), left: 0, behavior: "instant" })',
+        'await restoreEditorialSectionFromLocation()',
+    ]:
+        if marker not in javascript:
+            errors.append(f"P0-5 편집 페이지 기능 누락: {marker}")
+    if any(marker in javascript for marker in ["const activateTab", "const bindTabs", "elements.tabs", "elements.panels"]):
+        errors.append("P0-5에서 제거한 탭 전환 JavaScript가 남아 있습니다.")
+    for legacy_marker in ['<article class="meaning-entry"', '<article class="reflection-note"', 'document.createElement("article");\n      article.className = "meaning-entry"']:
+        if legacy_marker in html or legacy_marker in javascript:
+            errors.append(f"P0-5 하위 내용을 불필요한 article로 노출하고 있습니다: {legacy_marker}")
     if "playAllButton" in javascript:
         errors.append("삭제 요청된 모든 노래 재생 버튼 JavaScript 참조가 남아 있습니다.")
     if 'aria-label="책이 노래가 될 때 처음 화면"' in html:

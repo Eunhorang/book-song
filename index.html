@@ -26,7 +26,7 @@
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <link rel="manifest" href="./site.webmanifest">
   <link rel="preload" href="./fonts/PretendardVariable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="./styles.css?v=20260812-p04">
+  <link rel="stylesheet" href="./styles.css?v=20260812-p05">
   <title>책이 노래가 될 때</title>
 </head>
 <body>
@@ -38,7 +38,7 @@
         <img class="brand-mark" src="./assets/brand-symbol.png" width="512" height="512" alt="" decoding="async">
         <span>
           <strong>책이 노래가 될 때</strong>
-          <small>이정주의 사유음악실</small>
+          <small>사유음악실</small>
         </span>
       </a>
       <div class="header-playback" role="group" aria-label="상단 노래 재생 메뉴">
@@ -354,21 +354,12 @@
     </dialog>
 
     <section class="interpretation section-shell view-panel" id="interpretation" data-view-panel="meaning" aria-labelledby="interpretation-heading" hidden>
-      <div class="section-heading">
-        <div>
+      <article class="editorial-detail">
+        <header class="editorial-masthead">
           <p class="eyebrow">LYRICS &amp; MEANING</p>
-          <h2 id="interpretation-heading">가사와 의미</h2>
-          <p>한 곡의 생활 장면이 책의 질문과 어떻게 이어지는지 살펴봅니다.</p>
-        </div>
-      </div>
-
-      <div class="detail-card">
-        <div class="detail-header">
-          <div>
-            <span id="detail-number">05번째 노래</span>
-            <h3 id="detail-title">노래 제목</h3>
-          </div>
-          <div class="detail-source-group">
+          <span class="editorial-track-number" id="detail-number">05번째 노래</span>
+          <h2 id="interpretation-heading"><span id="detail-title">노래 제목</span></h2>
+          <div class="editorial-source-group">
             <p id="detail-source"></p>
             <p class="track-meta" aria-label="곡 공개 및 재생 정보">
               <span id="detail-uploaded">업로드 날짜 확인 중</span>
@@ -380,29 +371,57 @@
               이 노래 공유하기
             </button>
           </div>
-        </div>
+        </header>
 
-        <div class="tabs" role="tablist" aria-label="노래 상세 내용">
-          <button id="tab-lyrics" role="tab" aria-selected="true" aria-controls="panel-lyrics" tabindex="0">전체 가사</button>
-          <button id="tab-meaning" role="tab" aria-selected="false" aria-controls="panel-meaning" tabindex="-1">가사의 의미</button>
-          <button id="tab-notes" role="tab" aria-selected="false" aria-controls="panel-notes" tabindex="-1">질문과 기록</button>
-        </div>
+        <nav class="editorial-toc" aria-label="가사와 의미 본문 차례">
+          <strong>이 글에서</strong>
+          <a href="#lyrics-section">전체 가사</a>
+          <a href="#meaning-section">가사와 의미</a>
+          <a href="#notes-section">질문과 기록</a>
+        </nav>
 
-        <div class="tab-panel" id="panel-lyrics" role="tabpanel" aria-labelledby="tab-lyrics">
+        <section class="editorial-section" id="lyrics-section" aria-labelledby="lyrics-heading">
+          <header class="editorial-section-heading">
+            <span aria-hidden="true">01</span>
+            <div>
+              <h3 id="lyrics-heading">전체 가사</h3>
+              <p>책을 읽고 남은 마음을 생활의 언어로 옮긴 노랫말입니다.</p>
+            </div>
+          </header>
           <pre class="lyrics-text" id="lyrics-text"></pre>
-        </div>
-        <div class="tab-panel" id="panel-meaning" role="tabpanel" aria-labelledby="tab-meaning" hidden>
-          <div class="meaning-grid" id="meaning-grid"></div>
-        </div>
-        <div class="tab-panel" id="panel-notes" role="tabpanel" aria-labelledby="tab-notes" hidden>
-          <div class="notes-grid">
-            <article><span>출발 질문</span><p id="detail-question"></p></article>
-            <article><span>노래가 전하는 말</span><p id="detail-message"></p></article>
-            <article><span>영상 시작 내레이션</span><p id="detail-narration"></p></article>
-            <article><span>마지막에 남기는 질문</span><p id="detail-ending"></p></article>
+        </section>
+
+        <section class="editorial-section" id="meaning-section" aria-labelledby="meaning-heading">
+          <header class="editorial-section-heading">
+            <span aria-hidden="true">02</span>
+            <div>
+              <h3 id="meaning-heading">가사와 의미</h3>
+              <p>노래의 장면이 책의 생각과 만나는 지점을 차례로 짚습니다.</p>
+            </div>
+          </header>
+          <ol class="meaning-list" id="meaning-grid"></ol>
+        </section>
+
+        <section class="editorial-section" id="notes-section" aria-labelledby="notes-heading">
+          <header class="editorial-section-heading">
+            <span aria-hidden="true">03</span>
+            <div>
+              <h3 id="notes-heading">질문과 기록</h3>
+              <p>노래가 시작된 질문과 마지막에 다시 남는 질문을 한곳에 모았습니다.</p>
+            </div>
+          </header>
+          <dl class="reflection-notes">
+            <div class="reflection-note"><dt>출발 질문</dt><dd><p id="detail-question"></p></dd></div>
+            <div class="reflection-note"><dt>노래가 전하는 말</dt><dd><p id="detail-message"></p></dd></div>
+            <div class="reflection-note"><dt>시작 내레이션</dt><dd><p id="detail-narration"></p></dd></div>
+            <div class="reflection-note"><dt>마지막에 남기는 질문</dt><dd><p id="detail-ending"></p></dd></div>
+          </dl>
+          <div class="editorial-journal-action">
+            <p>이 질문에 대한 나만의 한 줄은 현재 브라우저의 ‘나의 기록’에 남길 수 있습니다.</p>
+            <a class="editorial-journal-link" id="editorial-journal-link" href="?view=journal">나의 기록에 답 남기기</a>
           </div>
-        </div>
-      </div>
+        </section>
+      </article>
     </section>
 
     <section class="about section-shell view-panel" id="about" data-view-panel="about" aria-labelledby="about-heading" hidden>
@@ -426,7 +445,7 @@
   <footer class="site-footer">
     <div>
       <strong>책이 노래가 될 때</strong>
-      <p>책에서 건진 질문을 노래로 기록하는 이정주의 사유음악실</p>
+      <p>책에서 건진 질문을 노래로 기록하는 사유음악실</p>
     </div>
     <div class="footer-notes">
       <p>책의 문장을 옮긴 공식 음원이나 전체 요약물이 아닌 독립 창작 프로젝트입니다.</p>
@@ -435,6 +454,6 @@
   </footer>
 
   <noscript>이 웹사이트에서 노래 목록을 살펴보려면 JavaScript를 켜 주세요.</noscript>
-  <script src="./app.js?v=20260812-p04" defer></script>
+  <script src="./app.js?v=20260812-p05" defer></script>
 </body>
 </html>
