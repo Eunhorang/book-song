@@ -2,10 +2,9 @@
 
 ## React Bits
 
-The track-card spotlight and content-fade interaction design were inspired by React Bits and independently adapted for this website using CSS and vanilla JavaScript.
+The content-fade interaction design was inspired by React Bits and independently adapted for this website using CSS and vanilla JavaScript.
 
 - Project: https://github.com/DavidHDev/react-bits
-- Spotlight Card: https://reactbits.dev/components/spotlight-card
 - Fade Content: https://reactbits.dev/animations/fade-content
 
 MIT + Commons Clause License Condition v1.0

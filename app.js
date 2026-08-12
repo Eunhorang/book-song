@@ -155,12 +155,6 @@
       text(elements.detailUploaded, uploadedLabel(track));
       text(elements.detailPlayCount, playCountLabel(track.id));
     }
-    for (const card of elements.trackGrid.querySelectorAll(".track-card[data-track-id]")) {
-      const cardTrack = state.tracks.find((item) => item.id === card.dataset.trackId);
-      if (!cardTrack) continue;
-      const count = card.querySelector("[data-play-count]");
-      if (count) text(count, playCountLabel(cardTrack.id));
-    }
   };
 
   const normalizeRequestedTrackId = (value) =>
@@ -1186,6 +1180,7 @@
     elements.shuffleButton.setAttribute("aria-label", `랜덤 재생: 현재 재생 가능한 보관 음원 ${available.length}곡을 중복 없이 무작위 순서로 재생`);
     updateRepeatOneButton();
     updatePlaybackToggle();
+    syncTrackRowStates();
 
     if (message) {
       setHeaderPlaybackStatus(message, "notice");
@@ -1279,76 +1274,75 @@
     return searchable.includes(state.query);
   };
 
-  const trackSpotlightPointerQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
-  const trackSpotlightMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-  const canUseTrackSpotlight = () => trackSpotlightPointerQuery.matches && !trackSpotlightMotionQuery.matches;
-
-  const resetTrackSpotlight = (shell) => {
-    delete shell.dataset.spotlightActive;
-    shell.style.setProperty("--spotlight-x", "50%");
-    shell.style.setProperty("--spotlight-y", "50%");
+  const selectedTrackRowPlaybackState = () => {
+    const track = selectedTrack();
+    if (!track) return { key: "idle", label: "" };
+    const player = activeLocalPlayer();
+    if (player && !player.hidden) {
+      if (!player.paused && !player.ended) return { key: "playing", label: "재생 중" };
+      if (player.ended) return { key: "complete", label: "재생 완료" };
+      if (player.currentTime > 0) return { key: "paused", label: "일시정지" };
+    }
+    return { key: "selected", label: "선택됨" };
   };
 
-  const bindTrackSpotlight = (shell) => {
-    if (!canUseTrackSpotlight()) return;
-    shell.addEventListener("pointermove", (event) => {
-      if (event.pointerType === "touch") return;
-      const bounds = shell.getBoundingClientRect();
-      shell.style.setProperty("--spotlight-x", `${Math.round(event.clientX - bounds.left)}px`);
-      shell.style.setProperty("--spotlight-y", `${Math.round(event.clientY - bounds.top)}px`);
-      shell.dataset.spotlightActive = "true";
-    });
-    shell.addEventListener("pointerleave", () => resetTrackSpotlight(shell));
-    shell.addEventListener("pointercancel", () => resetTrackSpotlight(shell));
+  const syncTrackRowStates = () => {
+    const playbackState = selectedTrackRowPlaybackState();
+    for (const row of elements.trackGrid.querySelectorAll(".track-row[data-track-id]")) {
+      const selected = row.dataset.trackId === state.selectedId;
+      row.setAttribute("aria-current", selected ? "true" : "false");
+      const shell = row.closest(".track-row-shell");
+      const stateLabel = row.querySelector("[data-track-state]");
+      if (selected) {
+        row.dataset.playbackState = playbackState.key;
+        if (shell) {
+          shell.dataset.selected = "true";
+          shell.dataset.playbackState = playbackState.key;
+        }
+        if (stateLabel) text(stateLabel, playbackState.label);
+      } else {
+        row.dataset.playbackState = "idle";
+        if (shell) {
+          shell.dataset.selected = "false";
+          shell.dataset.playbackState = "idle";
+        }
+        if (stateLabel) text(stateLabel, "");
+      }
+    }
   };
 
-  const createTrackCard = (track) => {
-    const status = mediaStatus(track.id);
+  const createTrackRow = (track) => {
     const shell = document.createElement("article");
-    shell.className = "track-card-shell";
-    shell.style.setProperty("--card-accent", track.theme.accent);
-    shell.style.setProperty("--card-soft", track.theme.soft);
+    shell.className = "track-row-shell";
+    shell.setAttribute("role", "listitem");
+    shell.style.setProperty("--row-accent", track.theme.accent);
+    shell.style.setProperty("--row-soft", track.theme.soft);
 
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "track-card";
+    button.className = "track-row";
     button.dataset.trackId = track.id;
     button.setAttribute("aria-current", track.id === state.selectedId ? "true" : "false");
 
-    const spotlight = document.createElement("span");
-    spotlight.className = "track-card-spotlight";
-    spotlight.setAttribute("aria-hidden", "true");
-    const top = document.createElement("div");
-    top.className = "track-card-top";
     const number = document.createElement("span");
-    number.className = "track-card-number";
-    number.textContent = `TRACK ${track.id}`;
-    const badge = document.createElement("span");
-    badge.className = "card-status";
-    badge.textContent = status.label;
-    top.append(number, badge);
+    number.className = "track-row-number";
+    number.textContent = track.id;
 
-    const title = document.createElement("h3");
+    const copy = document.createElement("span");
+    copy.className = "track-row-copy";
+    const title = document.createElement("span");
+    title.className = "track-row-title";
     title.textContent = track.title;
-    const book = document.createElement("p");
-    book.className = "track-card-book";
-    book.textContent = `${track.author} 《${track.book}》`;
-    const meta = document.createElement("p");
-    meta.className = "track-card-meta";
-    const uploaded = document.createElement("span");
-    uploaded.textContent = uploadedLabel(track);
-    const count = document.createElement("span");
-    count.dataset.playCount = "";
-    count.textContent = playCountLabel(track.id);
-    meta.append(uploaded, count);
-    const question = document.createElement("p");
-    question.className = "track-card-question";
-    question.textContent = track.question;
-    const action = document.createElement("span");
-    action.className = "track-card-action";
-    action.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z"/></svg><span>이 곡 선택하기</span>';
+    const book = document.createElement("span");
+    book.className = "track-row-book";
+    book.textContent = `《${track.book}》 · ${track.author}`;
+    copy.append(title, book);
 
-    button.append(spotlight, top, title, book, meta, question, action);
+    const stateLabel = document.createElement("span");
+    stateLabel.className = "track-row-state";
+    stateLabel.dataset.trackState = "";
+
+    button.append(number, copy, stateLabel);
     button.addEventListener("click", () => {
       selectTrack(track.id, { updateUrl: true });
       document.querySelector("#listen").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1358,7 +1352,7 @@
     favoriteButton.type = "button";
     favoriteButton.className = "track-favorite-button";
     favoriteButton.dataset.favoriteTrack = track.id;
-    favoriteButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg><span data-favorite-label></span>';
+    favoriteButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg><span class="visually-hidden" data-favorite-label></span>';
     const isFavorite = state.personalLibrary.favorites.includes(track.id);
     const favoriteLabel = isFavorite ? "마음에서 빼기" : "마음에 담기";
     favoriteButton.setAttribute("aria-pressed", isFavorite ? "true" : "false");
@@ -1371,13 +1365,13 @@
     });
 
     shell.append(button, favoriteButton);
-    bindTrackSpotlight(shell);
     return shell;
   };
 
   const renderLibrary = () => {
     const visible = state.tracks.filter(matchesFilter);
-    elements.trackGrid.replaceChildren(...visible.map(createTrackCard));
+    elements.trackGrid.replaceChildren(...visible.map(createTrackRow));
+    syncTrackRowStates();
     elements.noResults.hidden = visible.length !== 0;
     text(elements.resultCount, `전체 ${state.tracks.length}곡 중 ${visible.length}곡`);
   };

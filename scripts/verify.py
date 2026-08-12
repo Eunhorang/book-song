@@ -113,7 +113,7 @@ def main() -> None:
     if '<video id="main-player"' in html:
         errors.append("기본 플레이어가 영상 요소로 남아 있습니다.")
     stylesheet=(base/"styles.css").read_text(encoding="utf-8")
-    for marker in [".site-header", "position: sticky", '--site-header-height', '.site-header[data-condensed="true"]', ".header-playback", ".repeat-one-button", '.playlist-status[data-playback-state="playing"]', 'animation: playback-record-spin', 'animation-play-state: paused', 'animation-play-state: running', '@keyframes playback-record-spin', '@media (prefers-reduced-motion: reduce)', 'animation: none !important', '--fade-content-duration: 260ms', 'animation: fade-content-enter var(--fade-content-duration)', '@keyframes fade-content-enter', '.track-card-spotlight', '--spotlight-x', '--spotlight-y', '.track-card-shell[data-spotlight-active="true"]', '.track-card-shell:focus-within', ".playback-toggle-button", '[data-action="pause"]', ':not([aria-pressed="true"])', '-webkit-text-fill-color: #fff', ".hero-title-line", '.media-stage[data-media-kind="audio"]', "#video-player", 'font-family: "Pretendard"', 'url("./fonts/PretendardVariable.woff2")', '.hero-brand-image', 'background-image: url("./assets/brand-main.jpg")', '.section-jump', '.player-detail-link', '.track-share-button', '.player-actions', '.share-status', '.library-journal-card', '.journal', '.journal-summary', '.journal-privacy-note', '.personal-library', '.personal-track-list', '.personal-track-button', '.personal-track-record-button', '.journal-reflection-form', '.journal-reflection-card', '.journal-management', '.track-card-shell', '.track-favorite-button', '.clear-personal-library-dialog', '.track-meta', '.track-card-meta', '.detail-source-group', 'aspect-ratio: 16 / 9', 'color: #756a5f', '.tabs button[aria-selected="true"]', 'color-mix(in srgb, var(--card-accent) 94%, var(--ink))', 'color-mix(in srgb, var(--card-accent) 84%, #111)']:
+    for marker in [".site-header", "position: sticky", '--site-header-height', '.site-header[data-condensed="true"]', ".header-playback", ".repeat-one-button", '.playlist-status[data-playback-state="playing"]', 'animation: playback-record-spin', 'animation-play-state: paused', 'animation-play-state: running', '@keyframes playback-record-spin', '@media (prefers-reduced-motion: reduce)', 'animation: none !important', '--fade-content-duration: 260ms', 'animation: fade-content-enter var(--fade-content-duration)', '@keyframes fade-content-enter', ".playback-toggle-button", '[data-action="pause"]', ':not([aria-pressed="true"])', '-webkit-text-fill-color: #fff', ".hero-title-line", '.media-stage[data-media-kind="audio"]', "#video-player", 'font-family: "Pretendard"', 'url("./fonts/PretendardVariable.woff2")', '.hero-brand-image', 'background-image: url("./assets/brand-main.jpg")', '.section-jump', '.player-detail-link', '.track-share-button', '.player-actions', '.share-status', '.library-journal-card', '.journal', '.journal-summary', '.journal-privacy-note', '.personal-library', '.personal-track-list', '.personal-track-button', '.personal-track-record-button', '.journal-reflection-form', '.journal-reflection-card', '.journal-management', '.track-list', '.track-row-shell', '.track-row', '.track-row-state', '.track-favorite-button', '.clear-personal-library-dialog', '.track-meta', '.detail-source-group', 'aspect-ratio: 16 / 9', 'color: #756a5f', '.tabs button[aria-selected="true"]']:
         if marker not in stylesheet:
             errors.append(f"CSS 필수 표식 누락: {marker}")
     fade_keyframes=re.search(r"@keyframes fade-content-enter\s*\{.*?^\}",stylesheet,re.S|re.M)
@@ -121,9 +121,7 @@ def main() -> None:
         errors.append("Fade Content 키프레임을 찾을 수 없습니다.")
     elif re.search(r"(?:\bfilter\s*:|blur\s*\()",fade_keyframes.group(0),re.I):
         errors.append("Fade Content에는 흐림 효과를 사용할 수 없습니다.")
-    spotlight_block=stylesheet.partition(".track-card-spotlight {")[2].partition("\n}")[0]
-    if "pointer-events: none" not in spotlight_block:
-        errors.append("Spotlight 장식이 포인터 이벤트를 통과시키지 않습니다.")
+
     body_block=stylesheet.partition("body {")[2].partition("}")[0]
     if 'font-family: "Pretendard"' not in body_block:
         errors.append("본문 가독성 글꼴 적용 누락")
@@ -140,7 +138,7 @@ def main() -> None:
             errors.append(f"P0-1 표면 체계 누락: {marker}")
     if "--radius-xl" in stylesheet or re.search(r"--shadow(?:-soft)?\s*:",stylesheet):
         errors.append("P0-1 이전의 과도한 모서리·그림자 토큰이 남아 있습니다.")
-    if stylesheet.count("border-radius: 999px;") != 4:
+    if stylesheet.count("border-radius: 999px;") != 3:
         errors.append("P0-1 캡슐형 요소가 상태·개수 배지 외에 사용되고 있습니다.")
     if len(re.findall(r"^\s*box-shadow\s*:",stylesheet,re.M)) != 3:
         errors.append("P0-1 그림자가 선택 곡·공유 알림·확인 대화상자 외에 사용되고 있습니다.")
@@ -150,6 +148,26 @@ def main() -> None:
     if ".hero-stats" in stylesheet:
         errors.append("P0-2에서 제거한 첫 화면 통계 CSS가 남아 있습니다.")
     javascript=(base/"app.js").read_text(encoding="utf-8")
+    for marker in [
+        'const createTrackRow',
+        'shell.className = "track-row-shell"',
+        'shell.setAttribute("role", "listitem")',
+        'button.className = "track-row"',
+        'stateLabel.dataset.trackState = ""',
+        'book.textContent = `《${track.book}》 · ${track.author}`',
+        'const syncTrackRowStates',
+        'row.dataset.playbackState = playbackState.key',
+        'syncTrackRowStates();',
+    ]:
+        if marker not in javascript:
+            errors.append(f"P0-3 요약 행 기능 누락: {marker}")
+    if any(marker in javascript for marker in ['const createTrackCard', 'track-card-spotlight', 'bindTrackSpotlight']):
+        errors.append("P0-3에서 제거한 큰 카드·spotlight 구현이 JavaScript에 남아 있습니다.")
+    if any(marker in stylesheet for marker in ['.track-card-spotlight', '.track-card-question', '.track-card-meta', '.card-status']):
+        errors.append("P0-3에서 지연 공개한 카드 세부 정보·장식 CSS가 남아 있습니다.")
+    row_renderer=javascript.partition("const createTrackRow")[2].partition("const renderLibrary")[0]
+    if any(marker in row_renderer for marker in ['uploadedLabel(', 'playCountLabel(', 'track.question', 'status.label']):
+        errors.append("P0-3 요약 행에 업로드일·재생수·핵심 질문·음원 상태가 노출됩니다.")
     if "playAllButton" in javascript:
         errors.append("삭제 요청된 모든 노래 재생 버튼 JavaScript 참조가 남아 있습니다.")
     if 'aria-label="책이 노래가 될 때 처음 화면"' in html:
@@ -186,7 +204,7 @@ def main() -> None:
     ]:
         if marker not in javascript:
             errors.append(f"나의 기록 기능 누락: {marker}")
-    for marker in ['const startPlaylist','const advancePlaylist','playlistQueue','shuffleIds','repeatOne: false','repeatOneButton','const syncRepeatOneToPlayers','player.loop = Boolean(','!state.repeatOne &&','playbackQualification.lastMediaTime > player.currentTime + 1','setRepeatOneState(false)','mode === "audio" && !state.repeatOne','const setActiveView','addEventListener("popstate"','activeView','const setHeaderPlaybackStatus','const updatePlaybackToggle','playbackToggleButton.addEventListener("click"','현재 재생 중인 노래는','mediaStatus(track.id).key === "pending"','const audioTracks','const renderAudio','const renderVideo','state.mediaMode === "audio"','bindLocalPlayer(elements.mainPlayer, "audio")','addEventListener("pause"','player.addEventListener("playing"','const bindResponsiveHeader','const updateHeaderMetrics','new ResizeObserver(schedule)','librarySection.scrollIntoView','PLAY_QUALIFICATION_SECONDS = 30','PLAY_COUNTS_ENDPOINT','const loadPlayCounts','const recordQualifiedPlay','const updatePlaybackQualification','credentials: "omit"','addEventListener("timeupdate"','addEventListener("seeking"','dataset.playCount = ""','uploadedLabel(track)','const normalizeRequestedTrackId','requested !== null && requested !== initialTrack.id','selectTrack(initialTrack.id, { updateUrl: shouldNormalizeUrl })','const shareUrlForTrack','const showShareStatus','shareInProgress','aria-disabled','navigator.share','navigator.clipboard.writeText','document.execCommand("copy")','error.name === "AbortError"','링크를 복사했습니다','공유를 취소했습니다','PERSONAL_LIBRARY_KEY = "book-song:personal-library:v1"','RECENT_TRACK_LIMIT = 6','favorites: []','recent: []','localStorage.getItem(PERSONAL_LIBRARY_KEY)','localStorage.setItem(PERSONAL_LIBRARY_KEY','localStorage.removeItem(PERSONAL_LIBRARY_KEY)','window.addEventListener("storage"','const toggleFavorite','const recordRecentTrack','const clearPersonalLibrary','const openClearPersonalLibraryDialog','favoriteButton.setAttribute("aria-pressed"','recordRecentTrack(state.selectedId)','event.stopPropagation()','shell.append(button, favoriteButton)','const canUseTrackSpotlight','if (!canUseTrackSpotlight()) return;','bindTrackSpotlight(shell)','(hover: hover) and (pointer: fine)','(prefers-reduced-motion: reduce)','addEventListener("pointermove"','dataset.spotlightActive','className = "track-card-spotlight"','setAttribute("aria-hidden", "true")']:
+    for marker in ['const startPlaylist','const advancePlaylist','playlistQueue','shuffleIds','repeatOne: false','repeatOneButton','const syncRepeatOneToPlayers','player.loop = Boolean(','!state.repeatOne &&','playbackQualification.lastMediaTime > player.currentTime + 1','setRepeatOneState(false)','mode === "audio" && !state.repeatOne','const setActiveView','addEventListener("popstate"','activeView','const setHeaderPlaybackStatus','const updatePlaybackToggle','playbackToggleButton.addEventListener("click"','현재 재생 중인 노래는','mediaStatus(track.id).key === "pending"','const audioTracks','const renderAudio','const renderVideo','state.mediaMode === "audio"','bindLocalPlayer(elements.mainPlayer, "audio")','addEventListener("pause"','player.addEventListener("playing"','const bindResponsiveHeader','const updateHeaderMetrics','new ResizeObserver(schedule)','librarySection.scrollIntoView','PLAY_QUALIFICATION_SECONDS = 30','PLAY_COUNTS_ENDPOINT','const loadPlayCounts','const recordQualifiedPlay','const updatePlaybackQualification','credentials: "omit"','addEventListener("timeupdate"','addEventListener("seeking"','uploadedLabel(track)','const normalizeRequestedTrackId','requested !== null && requested !== initialTrack.id','selectTrack(initialTrack.id, { updateUrl: shouldNormalizeUrl })','const shareUrlForTrack','const showShareStatus','shareInProgress','aria-disabled','navigator.share','navigator.clipboard.writeText','document.execCommand("copy")','error.name === "AbortError"','링크를 복사했습니다','공유를 취소했습니다','PERSONAL_LIBRARY_KEY = "book-song:personal-library:v1"','RECENT_TRACK_LIMIT = 6','favorites: []','recent: []','localStorage.getItem(PERSONAL_LIBRARY_KEY)','localStorage.setItem(PERSONAL_LIBRARY_KEY','localStorage.removeItem(PERSONAL_LIBRARY_KEY)','window.addEventListener("storage"','const toggleFavorite','const recordRecentTrack','const clearPersonalLibrary','const openClearPersonalLibraryDialog','favoriteButton.setAttribute("aria-pressed"','recordRecentTrack(state.selectedId)','event.stopPropagation()','shell.append(button, favoriteButton)','(prefers-reduced-motion: reduce)']:
         if marker not in javascript:
             errors.append(f"JavaScript 기능 누락: {marker}")
     text_files=[p for p in base.rglob("*") if p.is_file() and p.suffix.lower() in {".html",".css",".js",".json",".webmanifest",".svg",".txt"}]
