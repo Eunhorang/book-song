@@ -19,12 +19,15 @@
       favorites: [],
       recent: [],
     },
+    personalReflections: {},
     personalStorageAvailable: true,
+    reflectionStorageAvailable: true,
   };
 
   const VIEW_LABELS = {
     home: "처음",
     library: "음악 보관함",
+    journal: "나의 기록",
     meaning: "가사와 의미",
     about: "프로젝트 소개",
   };
@@ -33,11 +36,15 @@
   const PLAY_QUALIFICATION_SECONDS = 30;
   const PLAY_RETRY_DELAYS = [3000, 10000];
   const PERSONAL_LIBRARY_KEY = "book-song:personal-library:v1";
+  const PERSONAL_REFLECTIONS_KEY = "book-song:reflections:v1";
   const RECENT_TRACK_LIMIT = 6;
+  const REFLECTION_CHARACTER_LIMIT = 300;
   const playCountFormatter = new Intl.NumberFormat("ko-KR");
   let playbackQualification = null;
   let shareStatusTimer = null;
   let shareInProgress = false;
+  let journalEditorDirty = false;
+  let journalEditorTrackId = null;
 
   const elements = {
     siteHeader: document.querySelector(".site-header"),
@@ -81,6 +88,7 @@
     trackGrid: document.querySelector("#track-grid"),
     resultCount: document.querySelector("#result-count"),
     noResults: document.querySelector("#no-results"),
+    libraryJournalStatus: document.querySelector("#library-journal-status"),
     personalLibraryHeading: document.querySelector("#personal-library-heading"),
     personalLibraryStatus: document.querySelector("#personal-library-status"),
     favoriteTrackList: document.querySelector("#favorite-track-list"),
@@ -91,6 +99,18 @@
     clearPersonalLibraryDialog: document.querySelector("#clear-personal-library-dialog"),
     confirmClearPersonalLibrary: document.querySelector("#confirm-clear-personal-library"),
     cancelClearPersonalLibrary: document.querySelector("#cancel-clear-personal-library"),
+    journalFavoriteCount: document.querySelector("#journal-favorite-count"),
+    journalRecentCount: document.querySelector("#journal-recent-count"),
+    journalReflectionCount: document.querySelector("#journal-reflection-count"),
+    journalReflectionForm: document.querySelector("#journal-reflection-form"),
+    journalTrackSelect: document.querySelector("#journal-track-select"),
+    journalTrackQuestion: document.querySelector("#journal-track-question"),
+    journalReflectionInput: document.querySelector("#journal-reflection-input"),
+    journalReflectionCharacterCount: document.querySelector("#journal-reflection-character-count"),
+    saveJournalReflection: document.querySelector("#save-journal-reflection"),
+    deleteJournalReflection: document.querySelector("#delete-journal-reflection"),
+    journalReflectionList: document.querySelector("#journal-reflection-list"),
+    exportJournalButton: document.querySelector("#export-journal-button"),
     detailNumber: document.querySelector("#detail-number"),
     detailTitle: document.querySelector("#detail-title"),
     detailSource: document.querySelector("#detail-source"),
@@ -271,10 +291,24 @@
   const personalLibraryIsEmpty = () =>
     state.personalLibrary.favorites.length === 0 && state.personalLibrary.recent.length === 0;
 
+  const reflectionEntries = () =>
+    Object.entries(state.personalReflections)
+      .map(([trackId, reflection]) => ({
+        track: state.tracks.find((track) => track.id === trackId),
+        reflection,
+      }))
+      .filter((item) => item.track)
+      .sort((left, right) => right.reflection.updatedAt.localeCompare(left.reflection.updatedAt));
+
+  const personalRecordsAreEmpty = () =>
+    personalLibraryIsEmpty() && reflectionEntries().length === 0;
+
   const setPersonalLibraryStatus = (message, kind = "notice") => {
-    text(elements.personalLibraryStatus, message);
-    if (message) elements.personalLibraryStatus.dataset.kind = kind;
-    else elements.personalLibraryStatus.removeAttribute("data-kind");
+    for (const status of [elements.personalLibraryStatus, elements.libraryJournalStatus]) {
+      text(status, message);
+      if (message) status.dataset.kind = kind;
+      else status.removeAttribute("data-kind");
+    }
   };
 
   const loadPersonalLibrary = () => {
@@ -302,7 +336,72 @@
     }
   };
 
+  const normalizePersonalReflections = (value) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+    const validIds = new Set(state.tracks.map((track) => track.id));
+    const normalized = {};
+    for (const [rawTrackId, entry] of Object.entries(value)) {
+      const trackId = normalizeRequestedTrackId(String(rawTrackId));
+      if (!validIds.has(trackId)) continue;
+      const rawText = typeof entry === "string" ? entry : entry?.text;
+      const reflectionText = typeof rawText === "string"
+        ? rawText.trim().slice(0, REFLECTION_CHARACTER_LIMIT)
+        : "";
+      if (!reflectionText) continue;
+      const rawUpdatedAt = typeof entry === "object" && typeof entry?.updatedAt === "string"
+        ? entry.updatedAt
+        : "";
+      const updatedAt = Number.isNaN(Date.parse(rawUpdatedAt)) ? "" : rawUpdatedAt;
+      normalized[trackId] = { text: reflectionText, updatedAt };
+    }
+    return normalized;
+  };
+
+  const parsePersonalReflections = (rawValue) => {
+    if (!rawValue) return {};
+    try {
+      return normalizePersonalReflections(JSON.parse(rawValue));
+    } catch (error) {
+      return {};
+    }
+  };
+
+  const loadPersonalReflections = () => {
+    try {
+      state.personalReflections = parsePersonalReflections(localStorage.getItem(PERSONAL_REFLECTIONS_KEY));
+      state.reflectionStorageAvailable = true;
+    } catch (error) {
+      state.personalReflections = {};
+      state.reflectionStorageAvailable = false;
+    }
+  };
+
+  const persistPersonalReflections = () => {
+    try {
+      if (reflectionEntries().length === 0) {
+        localStorage.removeItem(PERSONAL_REFLECTIONS_KEY);
+      } else {
+        localStorage.setItem(PERSONAL_REFLECTIONS_KEY, JSON.stringify(state.personalReflections));
+      }
+      state.reflectionStorageAvailable = true;
+      return true;
+    } catch (error) {
+      state.reflectionStorageAvailable = false;
+      return false;
+    }
+  };
+
+  const openTrackInLibrary = (trackId) => {
+    const track = state.tracks.find((item) => item.id === trackId);
+    if (!track) return;
+    setActiveView("library", { historyMode: "push", focus: true });
+    if (track.id === state.selectedId) updateUrl(track.id);
+    else selectTrack(track.id, { updateUrl: true });
+  };
+
   const createPersonalTrackButton = (track) => {
+    const row = document.createElement("div");
+    row.className = "personal-track-row";
     const button = document.createElement("button");
     button.type = "button";
     button.className = "personal-track-button";
@@ -316,11 +415,17 @@
     title.textContent = track.title;
     button.append(number, title);
 
-    button.addEventListener("click", () => {
-      selectTrack(track.id, { updateUrl: true });
-      document.querySelector("#listen").scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-    return button;
+    button.addEventListener("click", () => openTrackInLibrary(track.id));
+
+    const recordButton = document.createElement("button");
+    recordButton.type = "button";
+    recordButton.className = "personal-track-record-button";
+    recordButton.textContent = state.personalReflections[track.id] ? "한 줄 보기" : "한 줄 쓰기";
+    recordButton.setAttribute("aria-label", `${recordButton.textContent}: 〈${track.title}〉`);
+    recordButton.addEventListener("click", () => requestJournalTrackSelection(track.id, { focus: true }));
+
+    row.append(button, recordButton);
+    return row;
   };
 
   const renderPersonalTrackList = (container, ids, emptyMessage) => {
@@ -335,6 +440,212 @@
     empty.className = "personal-empty";
     empty.textContent = emptyMessage;
     container.replaceChildren(empty);
+  };
+
+  const updateReflectionCharacterCount = () => {
+    const count = elements.journalReflectionInput.value.length;
+    text(elements.journalReflectionCharacterCount, `${count}/${REFLECTION_CHARACTER_LIMIT}`);
+  };
+
+  const selectJournalTrack = (trackId, options = {}) => {
+    const track = state.tracks.find((item) => item.id === trackId) || state.tracks[0];
+    if (!track) return;
+    journalEditorTrackId = track.id;
+    journalEditorDirty = false;
+    elements.journalTrackSelect.value = track.id;
+    text(elements.journalTrackQuestion, track.question);
+    const reflection = state.personalReflections[track.id]?.text || "";
+    elements.journalReflectionInput.value = reflection;
+    elements.journalReflectionInput.setCustomValidity("");
+    elements.deleteJournalReflection.disabled = !reflection;
+    text(elements.saveJournalReflection, reflection ? "한 줄 고쳐 저장하기" : "한 줄 저장하기");
+    updateReflectionCharacterCount();
+    if (options.focus) {
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      elements.journalReflectionInput.scrollIntoView({
+        block: "center",
+        behavior: reducedMotion ? "auto" : "smooth",
+      });
+      elements.journalReflectionInput.focus({ preventScroll: true });
+    }
+  };
+
+  const requestJournalTrackSelection = (trackId, options = {}) => {
+    if (journalEditorDirty && trackId === journalEditorTrackId) {
+      if (options.focus) {
+        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        elements.journalReflectionInput.scrollIntoView({
+          block: "center",
+          behavior: reducedMotion ? "auto" : "smooth",
+        });
+        elements.journalReflectionInput.focus({ preventScroll: true });
+      }
+      return true;
+    }
+    if (
+      journalEditorDirty &&
+      journalEditorTrackId &&
+      !window.confirm("저장하지 않은 한 줄이 있습니다. 다른 노래로 이동할까요?")
+    ) {
+      elements.journalTrackSelect.value = journalEditorTrackId;
+      return false;
+    }
+    selectJournalTrack(trackId, options);
+    return true;
+  };
+
+  const initializeJournalEditor = () => {
+    const options = state.tracks.map((track) => {
+      const option = document.createElement("option");
+      option.value = track.id;
+      option.textContent = `${track.id}. ${track.title}`;
+      return option;
+    });
+    elements.journalTrackSelect.replaceChildren(...options);
+    selectJournalTrack(state.selectedId || state.tracks[0]?.id);
+  };
+
+  const reflectionDateLabel = (value) => {
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return "저장 날짜 확인 불가";
+    return new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium" }).format(parsed);
+  };
+
+  const createJournalReflectionCard = ({ track, reflection }) => {
+    const article = document.createElement("article");
+    article.className = "journal-reflection-card";
+
+    const header = document.createElement("div");
+    header.className = "journal-reflection-card-header";
+    const headingGroup = document.createElement("div");
+    const number = document.createElement("span");
+    number.textContent = `TRACK ${track.id}`;
+    const heading = document.createElement("h4");
+    heading.textContent = track.title;
+    headingGroup.append(number, heading);
+    const savedAt = document.createElement("time");
+    if (reflection.updatedAt) savedAt.dateTime = reflection.updatedAt;
+    savedAt.textContent = reflectionDateLabel(reflection.updatedAt);
+    header.append(headingGroup, savedAt);
+
+    const quote = document.createElement("blockquote");
+    quote.textContent = reflection.text;
+
+    const actions = document.createElement("div");
+    actions.className = "journal-reflection-card-actions";
+    const playButton = document.createElement("button");
+    playButton.type = "button";
+    playButton.textContent = "이 노래 듣기";
+    playButton.addEventListener("click", () => openTrackInLibrary(track.id));
+    const editButton = document.createElement("button");
+    editButton.type = "button";
+    editButton.textContent = "한 줄 고치기";
+    editButton.addEventListener("click", () => requestJournalTrackSelection(track.id, { focus: true }));
+    actions.append(playButton, editButton);
+
+    article.append(header, quote, actions);
+    return article;
+  };
+
+  const renderJournalReflections = () => {
+    const entries = reflectionEntries();
+    if (entries.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "personal-empty journal-reflection-empty";
+      empty.textContent = "아직 남긴 문장이 없습니다. 마음에 남은 곡을 골라 첫 문장을 적어 보세요.";
+      elements.journalReflectionList.replaceChildren(empty);
+      return;
+    }
+    elements.journalReflectionList.replaceChildren(...entries.map(createJournalReflectionCard));
+  };
+
+  const saveJournalReflection = () => {
+    const track = state.tracks.find((item) => item.id === elements.journalTrackSelect.value);
+    if (!track) return;
+    const reflectionText = elements.journalReflectionInput.value.replace(/\s+/g, " ").trim();
+    if (!reflectionText) {
+      elements.journalReflectionInput.setCustomValidity("남기고 싶은 문장을 입력해 주세요.");
+      elements.journalReflectionInput.reportValidity();
+      return;
+    }
+    elements.journalReflectionInput.setCustomValidity("");
+    state.personalReflections[track.id] = {
+      text: reflectionText.slice(0, REFLECTION_CHARACTER_LIMIT),
+      updatedAt: new Date().toISOString(),
+    };
+    const saved = persistPersonalReflections();
+    renderPersonalLibrary();
+    selectJournalTrack(track.id);
+    setPersonalLibraryStatus(
+      saved
+        ? `〈${track.title}〉에 남긴 한 줄을 이 브라우저에 저장했습니다.`
+        : `〈${track.title}〉의 한 줄을 현재 화면에만 저장했습니다. 브라우저 설정 때문에 다음 방문에는 유지되지 않을 수 있습니다.`,
+      saved ? "notice" : "warning",
+    );
+  };
+
+  const deleteJournalReflection = () => {
+    const track = state.tracks.find((item) => item.id === elements.journalTrackSelect.value);
+    if (!track || !state.personalReflections[track.id]) return;
+    if (!window.confirm(`〈${track.title}〉에 남긴 한 줄을 이 기기에서 지울까요?`)) return;
+    delete state.personalReflections[track.id];
+    const deleted = persistPersonalReflections();
+    renderPersonalLibrary();
+    selectJournalTrack(track.id);
+    setPersonalLibraryStatus(
+      deleted
+        ? `〈${track.title}〉에 남긴 한 줄을 지웠습니다.`
+        : "현재 화면의 한 줄은 지웠지만 브라우저 저장소를 변경하지 못했습니다.",
+      deleted ? "notice" : "warning",
+    );
+  };
+
+  const markdownTrackList = (ids, emptyMessage) => {
+    const lines = ids
+      .map((id) => state.tracks.find((track) => track.id === id))
+      .filter(Boolean)
+      .map((track) => `- ${track.id}. 〈${track.title}〉 — ${track.author} 《${track.book}》`);
+    return lines.length > 0 ? lines : [`- ${emptyMessage}`];
+  };
+
+  const exportJournalMarkdown = () => {
+    if (personalRecordsAreEmpty()) return;
+    const today = new Intl.DateTimeFormat("sv-SE").format(new Date());
+    const lines = [
+      "# 나만의 노래 기록",
+      "",
+      `- 내보낸 날짜: ${today}`,
+      "- 저장 범위: 이 브라우저의 개인 감상 기록",
+      "",
+      "## 마음에 담은 노래",
+      "",
+      ...markdownTrackList(state.personalLibrary.favorites, "아직 마음에 담은 노래가 없습니다."),
+      "",
+      "## 최근 들은 노래",
+      "",
+      ...markdownTrackList(state.personalLibrary.recent, "아직 최근 들은 노래가 없습니다."),
+      "",
+      "## 내가 남긴 한 줄",
+      "",
+    ];
+    const entries = reflectionEntries();
+    if (entries.length === 0) {
+      lines.push("아직 남긴 문장이 없습니다.");
+    } else {
+      for (const { track, reflection } of entries) {
+        lines.push(`### ${track.id}. ${track.title}`, "", `> ${reflection.text}`, "", `- 마지막 저장: ${reflectionDateLabel(reflection.updatedAt)}`, "");
+      }
+    }
+    const blob = new Blob([`${lines.join("\n")}\n`], { type: "text/markdown;charset=utf-8" });
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = `나만의-노래-기록-${today}.md`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
+    setPersonalLibraryStatus("나의 노래 기록을 Markdown 파일로 내보냈습니다.");
   };
 
   const syncFavoriteButtons = () => {
@@ -362,9 +673,19 @@
       state.personalLibrary.recent,
       "노래를 재생하면 최근 들은 순서로 표시됩니다.",
     );
+    const reflectionCount = reflectionEntries().length;
     text(elements.favoriteTrackCount, `${state.personalLibrary.favorites.length}곡`);
     text(elements.recentTrackCount, `${state.personalLibrary.recent.length}곡`);
-    elements.clearPersonalLibraryButton.disabled = personalLibraryIsEmpty();
+    text(elements.journalFavoriteCount, `${state.personalLibrary.favorites.length}곡`);
+    text(elements.journalRecentCount, `${state.personalLibrary.recent.length}곡`);
+    text(elements.journalReflectionCount, `${reflectionCount}개`);
+    text(
+      elements.libraryJournalStatus,
+      `마음에 담은 노래 ${state.personalLibrary.favorites.length}곡 · 최근 들은 노래 ${state.personalLibrary.recent.length}곡 · 남긴 한 줄 ${reflectionCount}개`,
+    );
+    elements.clearPersonalLibraryButton.disabled = personalRecordsAreEmpty();
+    elements.exportJournalButton.disabled = personalRecordsAreEmpty();
+    renderJournalReflections();
     syncFavoriteButtons();
   };
 
@@ -405,12 +726,16 @@
 
   const clearPersonalLibrary = () => {
     state.personalLibrary = emptyPersonalLibrary();
-    const cleared = persistPersonalLibrary();
+    state.personalReflections = {};
+    const libraryCleared = persistPersonalLibrary();
+    const reflectionsCleared = persistPersonalReflections();
     renderPersonalLibrary();
+    selectJournalTrack(elements.journalTrackSelect.value || state.selectedId);
+    const cleared = libraryCleared && reflectionsCleared;
     setPersonalLibraryStatus(
       cleared
-        ? "이 기기의 마음에 담은 노래와 최근 들은 노래를 모두 지웠습니다."
-        : "현재 화면의 기록은 지웠지만 브라우저 저장소를 변경하지 못했습니다.",
+        ? "이 기기의 마음에 담은 노래, 최근 들은 노래와 한 줄 기록을 모두 지웠습니다."
+        : "현재 화면의 기록은 지웠지만 브라우저 저장소 일부를 변경하지 못했습니다.",
       cleared ? "notice" : "warning",
     );
   };
@@ -422,18 +747,49 @@
       elements.cancelClearPersonalLibrary.focus();
       return;
     }
-    if (window.confirm("마음에 담은 노래와 최근 들은 노래를 이 기기에서 모두 지울까요?")) {
+    if (window.confirm("마음에 담은 노래, 최근 들은 노래와 한 줄 기록을 이 기기에서 모두 지울까요?")) {
       clearPersonalLibrary();
       elements.personalLibraryHeading.focus({ preventScroll: true });
     }
   };
 
   const syncPersonalLibraryFromStorage = (event) => {
-    if (event.key !== PERSONAL_LIBRARY_KEY || state.tracks.length === 0) return;
-    state.personalLibrary = parsePersonalLibrary(event.newValue);
-    state.personalStorageAvailable = true;
+    if (state.tracks.length === 0) return;
+    let reflectionConflict = false;
+    if (event.key === null) {
+      const previousText = state.personalReflections[journalEditorTrackId]?.text || "";
+      state.personalLibrary = emptyPersonalLibrary();
+      state.personalReflections = {};
+      reflectionConflict = journalEditorDirty && Boolean(previousText);
+      state.personalStorageAvailable = true;
+      state.reflectionStorageAvailable = true;
+      if (!journalEditorDirty) {
+        selectJournalTrack(elements.journalTrackSelect.value || state.selectedId);
+      }
+    } else if (event.key === PERSONAL_LIBRARY_KEY) {
+      state.personalLibrary = parsePersonalLibrary(event.newValue);
+      state.personalStorageAvailable = true;
+    } else if (event.key === PERSONAL_REFLECTIONS_KEY) {
+      const previousText = state.personalReflections[journalEditorTrackId]?.text || "";
+      state.personalReflections = parsePersonalReflections(event.newValue);
+      const nextText = state.personalReflections[journalEditorTrackId]?.text || "";
+      reflectionConflict = journalEditorDirty && previousText !== nextText;
+      state.reflectionStorageAvailable = true;
+      if (!journalEditorDirty) {
+        selectJournalTrack(elements.journalTrackSelect.value || state.selectedId);
+      }
+    } else {
+      return;
+    }
     renderPersonalLibrary();
-    setPersonalLibraryStatus("다른 탭에서 바뀐 이 기기의 노래 기록을 반영했습니다.");
+    setPersonalLibraryStatus(
+      reflectionConflict
+        ? "다른 탭에서 같은 곡의 한 줄이 바뀌었습니다. 현재 초안은 유지되며, 저장하면 다른 탭의 문장을 덮어씁니다."
+        : journalEditorDirty
+          ? "다른 탭의 변경을 목록에 반영했습니다. 지금 입력 중인 문장은 저장하기 전까지 편집창에 유지됩니다."
+          : "다른 탭에서 바뀐 이 기기의 노래 기록을 반영했습니다.",
+      reflectionConflict ? "warning" : "notice",
+    );
   };
 
   const normalizeView = (value) => (Object.hasOwn(VIEW_LABELS, value) ? value : "home");
@@ -470,6 +826,12 @@
       socialTitle = documentTitle;
       description = "책이 남긴 질문을 노래로 만나는 이정주의 음악 보관함";
       viewUrl.searchParams.set("view", "library");
+      canonicalUrl = viewUrl.href;
+    } else if (state.activeView === "journal") {
+      documentTitle = "나의 기록 | 책이 노래가 될 때";
+      socialTitle = documentTitle;
+      description = "마음에 담은 노래와 나만의 한 줄을 이 브라우저에 기록하는 개인 감상 공간";
+      viewUrl.searchParams.set("view", "journal");
       canonicalUrl = viewUrl.href;
     } else if (state.activeView === "meaning") {
       documentTitle = `${track ? `${track.title} · ` : ""}가사와 의미 | 책이 노래가 될 때`;
@@ -1287,8 +1649,33 @@
       state.filter = event.target.value;
       renderLibrary();
     });
+    elements.journalTrackSelect.addEventListener("change", (event) => {
+      requestJournalTrackSelection(event.target.value);
+    });
+    elements.journalReflectionInput.addEventListener("input", () => {
+      elements.journalReflectionInput.setCustomValidity("");
+      const savedText = state.personalReflections[journalEditorTrackId]?.text || "";
+      journalEditorDirty = elements.journalReflectionInput.value !== savedText;
+      updateReflectionCharacterCount();
+    });
+    elements.journalReflectionForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      saveJournalReflection();
+    });
+    elements.deleteJournalReflection.addEventListener("click", deleteJournalReflection);
+    elements.exportJournalButton.addEventListener("click", exportJournalMarkdown);
+    window.addEventListener("beforeunload", (event) => {
+      if (!journalEditorDirty) return;
+      event.preventDefault();
+      event.returnValue = "";
+    });
     elements.clearPersonalLibraryButton.addEventListener("click", openClearPersonalLibraryDialog);
     elements.cancelClearPersonalLibrary.addEventListener("click", () => {
+      elements.clearPersonalLibraryDialog.close("cancel");
+      elements.clearPersonalLibraryButton.focus({ preventScroll: true });
+    });
+    elements.clearPersonalLibraryDialog.addEventListener("cancel", (event) => {
+      event.preventDefault();
       elements.clearPersonalLibraryDialog.close("cancel");
       elements.clearPersonalLibraryButton.focus({ preventScroll: true });
     });
@@ -1416,6 +1803,7 @@
       state.tracks = await tracksResponse.json();
       state.media = await mediaResponse.json();
       loadPersonalLibrary();
+      loadPersonalReflections();
       text(elements.songCount, String(state.tracks.length));
       text(elements.bookCount, String(new Set(state.tracks.map((track) => `${track.author}:${track.book}`)).size));
       const requested = new URL(window.location.href).searchParams.get("track");
@@ -1425,10 +1813,11 @@
         const shouldNormalizeUrl = requested !== null && requested !== initialTrack.id;
         selectTrack(initialTrack.id, { updateUrl: shouldNormalizeUrl });
       }
+      initializeJournalEditor();
       renderPersonalLibrary();
-      if (!state.personalStorageAvailable) {
+      if (!state.personalStorageAvailable || !state.reflectionStorageAvailable) {
         setPersonalLibraryStatus(
-          "브라우저 설정 때문에 개인 보관함을 이 기기에 저장할 수 없습니다. 현재 화면에서만 사용할 수 있습니다.",
+          "브라우저 설정 때문에 개인 기록을 이 기기에 저장할 수 없습니다. 현재 화면에서만 사용할 수 있습니다.",
           "warning",
         );
       }
@@ -1449,7 +1838,9 @@
           playCountsStatus: state.playCountsStatus,
           favorites: [...state.personalLibrary.favorites],
           recent: [...state.personalLibrary.recent],
+          reflections: structuredClone(state.personalReflections),
           personalStorageAvailable: state.personalStorageAvailable,
+          reflectionStorageAvailable: state.reflectionStorageAvailable,
           qualifyingTrackId: playbackQualification?.trackId || null,
           qualifiedSeconds: playbackQualification?.playedSeconds || 0,
           playCountRecorded: Boolean(playbackQualification?.counted),

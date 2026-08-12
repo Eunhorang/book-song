@@ -26,7 +26,7 @@
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <link rel="manifest" href="./site.webmanifest">
   <link rel="preload" href="./fonts/PretendardVariable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="./styles.css?v=20260811-effects1">
+  <link rel="stylesheet" href="./styles.css?v=20260812-journal1">
   <title>책이 노래가 될 때</title>
 </head>
 <body>
@@ -69,6 +69,7 @@
       </div>
       <nav class="site-nav" aria-label="주요 메뉴">
         <a href="?view=library" data-view-link="library" aria-controls="listen library">음악 보관함</a>
+        <a href="?view=journal" data-view-link="journal" aria-controls="journal">나의 기록</a>
         <a href="?view=meaning" data-view-link="meaning" aria-controls="interpretation">가사와 의미</a>
         <a href="?view=about" data-view-link="about" aria-controls="about">프로젝트 소개</a>
       </nav>
@@ -190,45 +191,15 @@
         <p class="result-count" id="result-count" aria-live="polite"></p>
       </div>
 
-      <section class="personal-library" id="personal-library" aria-labelledby="personal-library-heading">
-        <div class="personal-library-header">
-          <div>
-            <p class="personal-library-kicker">로그인 없이 사용하는 개인 보관함</p>
-            <h3 id="personal-library-heading" tabindex="-1">나만의 노래 기록</h3>
-            <p class="personal-library-privacy">
-              마음에 담은 노래와 최근 들은 노래는 이 기기에만 저장되며 서버로 전송되지 않습니다.
-            </p>
-          </div>
-          <button class="clear-personal-library-button" id="clear-personal-library-button" type="button" disabled>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5"/></svg>
-            이 기기의 감상 기록 지우기
-          </button>
+      <aside class="library-journal-card" id="library-journal-card" aria-labelledby="library-journal-heading">
+        <div>
+          <p class="personal-library-kicker">로그인 없이 사용하는 개인 감상 공간</p>
+          <h3 id="library-journal-heading">마음에 남은 노래를 다시 만나 보세요</h3>
+          <p>마음에 담은 노래, 최근 들은 노래와 곡마다 남긴 한 줄을 ‘나의 기록’에서 모아 볼 수 있습니다.</p>
+          <p class="library-journal-status" id="library-journal-status" role="status" aria-live="polite" aria-atomic="true"></p>
         </div>
-
-        <p class="personal-library-status" id="personal-library-status" role="status" aria-live="polite" aria-atomic="true"></p>
-
-        <div class="personal-library-grid">
-          <section class="personal-collection" aria-labelledby="favorite-tracks-heading">
-            <div class="personal-collection-heading">
-              <h4 id="favorite-tracks-heading">마음에 담은 노래</h4>
-              <span id="favorite-track-count">0곡</span>
-            </div>
-            <div class="personal-track-list" id="favorite-track-list">
-              <p class="personal-empty">아직 마음에 담은 노래가 없습니다.</p>
-            </div>
-          </section>
-
-          <section class="personal-collection" aria-labelledby="recent-tracks-heading">
-            <div class="personal-collection-heading">
-              <h4 id="recent-tracks-heading">최근 들은 노래</h4>
-              <span id="recent-track-count">0곡</span>
-            </div>
-            <div class="personal-track-list" id="recent-track-list">
-              <p class="personal-empty">노래를 재생하면 최근 들은 순서로 표시됩니다.</p>
-            </div>
-          </section>
-        </div>
-      </section>
+        <a class="button button-secondary" href="?view=journal" data-view-link="journal">나의 기록 보기</a>
+      </aside>
 
       <div class="library-tools" role="search">
         <label class="search-field" for="track-search">
@@ -256,12 +227,126 @@
       </div>
     </section>
 
+    <section class="journal section-shell view-panel" id="journal" data-view-panel="journal" aria-labelledby="journal-heading" hidden>
+      <div class="journal-hero">
+        <div>
+          <p class="eyebrow">MY SONG JOURNAL</p>
+          <h2 id="journal-heading">나만의 노래 기록 공간</h2>
+          <p class="journal-lead">마음에 남은 노래를 다시 듣고, 오늘의 생각을 한 줄로 남겨 보세요.</p>
+        </div>
+        <div class="journal-privacy-note" role="note" aria-label="개인 기록 저장 안내">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3M5 10h14v10H5V10Zm7 4v2"/></svg>
+          <p><strong>기록은 이 기기에만 저장되며 서버로 전송되지 않습니다.</strong> 이름이나 로그인을 요구하지 않습니다. 다른 기기·브라우저와 자동으로 이어지지 않으며, 브라우저 데이터를 지우면 사라질 수 있습니다.</p>
+        </div>
+      </div>
+
+      <dl class="journal-summary" aria-label="나의 노래 기록 현황">
+        <div><dt id="journal-favorite-count">0곡</dt><dd>마음에 담은 노래</dd></div>
+        <div><dt id="journal-recent-count">0곡</dt><dd>최근 들은 노래</dd></div>
+        <div><dt id="journal-reflection-count">0개</dt><dd>내가 남긴 한 줄</dd></div>
+      </dl>
+
+      <section class="personal-library" id="personal-library" aria-labelledby="personal-library-heading">
+        <div class="personal-library-header">
+          <div>
+            <p class="personal-library-kicker">다시 듣고 싶은 노래</p>
+            <h3 id="personal-library-heading" tabindex="-1">나의 노래 모음</h3>
+            <p class="personal-library-privacy">노래를 선택하면 음악 보관함의 같은 플레이어에서 이어서 감상할 수 있습니다.</p>
+          </div>
+          <a class="button button-secondary journal-library-link" href="?view=library" data-view-link="library">새 노래 찾기</a>
+        </div>
+
+        <p class="personal-library-status" id="personal-library-status" role="status" aria-live="polite" aria-atomic="true"></p>
+
+        <div class="personal-library-grid">
+          <section class="personal-collection" aria-labelledby="favorite-tracks-heading">
+            <div class="personal-collection-heading">
+              <h4 id="favorite-tracks-heading">마음에 담은 노래</h4>
+              <span id="favorite-track-count">0곡</span>
+            </div>
+            <div class="personal-track-list" id="favorite-track-list">
+              <p class="personal-empty">아직 마음에 담은 노래가 없습니다.</p>
+            </div>
+          </section>
+
+          <section class="personal-collection" aria-labelledby="recent-tracks-heading">
+            <div class="personal-collection-heading">
+              <h4 id="recent-tracks-heading">최근 들은 노래</h4>
+              <span id="recent-track-count">0곡</span>
+            </div>
+            <div class="personal-track-list" id="recent-track-list">
+              <p class="personal-empty">노래를 재생하면 최근 들은 순서로 표시됩니다.</p>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <div class="journal-reflection-layout">
+        <section class="journal-reflection-editor" aria-labelledby="journal-reflection-heading">
+          <div class="journal-section-heading">
+            <div>
+              <p class="personal-library-kicker">한 곡, 한 줄</p>
+              <h3 id="journal-reflection-heading">오늘 내게 남은 말</h3>
+            </div>
+            <span>곡마다 1개</span>
+          </div>
+
+          <form class="journal-reflection-form" id="journal-reflection-form">
+            <label for="journal-track-select">기록할 노래</label>
+            <select id="journal-track-select" aria-describedby="journal-track-question" required></select>
+            <p class="journal-track-question" id="journal-track-question"></p>
+
+            <label for="journal-reflection-input">이 노래가 오늘 내게 남긴 말은 무엇인가요?</label>
+            <textarea id="journal-reflection-input" rows="5" maxlength="300" aria-describedby="journal-track-question journal-reflection-help journal-reflection-character-count" placeholder="짧은 문장으로 적어 보세요."></textarea>
+            <div class="journal-input-meta">
+              <span id="journal-reflection-help">입력한 내용은 이 브라우저에 자동 전송되지 않고, 저장 버튼을 눌렀을 때만 보관됩니다.</span>
+              <span id="journal-reflection-character-count" aria-live="off">0/300</span>
+            </div>
+            <div class="journal-form-actions">
+              <button class="button button-primary" id="save-journal-reflection" type="submit">한 줄 저장하기</button>
+              <button class="button journal-delete-button" id="delete-journal-reflection" type="button" disabled>이 한 줄 지우기</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="journal-reflections" aria-labelledby="journal-reflections-heading">
+          <div class="journal-section-heading">
+            <div>
+              <p class="personal-library-kicker">나의 문장</p>
+              <h3 id="journal-reflections-heading">내가 남긴 한 줄</h3>
+            </div>
+          </div>
+          <div class="journal-reflection-list" id="journal-reflection-list">
+            <p class="personal-empty">아직 남긴 문장이 없습니다.</p>
+          </div>
+        </section>
+      </div>
+
+      <section class="journal-management" aria-labelledby="journal-management-heading">
+        <div>
+          <p class="personal-library-kicker">기록 관리</p>
+          <h3 id="journal-management-heading">내 기록을 직접 보관하고 관리하기</h3>
+          <p>Markdown 파일은 이 기기에서 바로 만들어집니다. 전체 삭제는 마음에 담은 노래·최근 들은 노래·한 줄 기록을 모두 지웁니다.</p>
+        </div>
+        <div class="journal-management-actions">
+          <button class="button button-secondary" id="export-journal-button" type="button" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 19h14"/></svg>
+            Markdown으로 내보내기
+          </button>
+          <button class="clear-personal-library-button" id="clear-personal-library-button" type="button" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5"/></svg>
+            이 기기의 감상 기록 모두 지우기
+          </button>
+        </div>
+      </section>
+    </section>
+
     <dialog class="clear-personal-library-dialog" id="clear-personal-library-dialog" aria-labelledby="clear-personal-library-heading" aria-describedby="clear-personal-library-description">
       <div class="clear-personal-library-content">
         <p class="personal-library-kicker">이 기기의 개인 기록</p>
         <h2 id="clear-personal-library-heading">감상 기록을 모두 지울까요?</h2>
         <p id="clear-personal-library-description">
-          마음에 담은 노래와 최근 들은 노래가 이 기기에서 모두 삭제됩니다. 공개 재생수에는 영향을 주지 않습니다.
+          마음에 담은 노래, 최근 들은 노래와 직접 남긴 한 줄이 이 기기에서 모두 삭제됩니다. 되돌릴 수 없으며 공개 재생수에는 영향을 주지 않습니다.
         </p>
         <div class="clear-personal-library-actions">
           <button class="button button-secondary" id="cancel-clear-personal-library" type="button">취소</button>
@@ -352,6 +437,6 @@
   </footer>
 
   <noscript>이 웹사이트에서 노래 목록을 살펴보려면 JavaScript를 켜 주세요.</noscript>
-  <script src="./app.js?v=20260811-effects1" defer></script>
+  <script src="./app.js?v=20260812-journal1" defer></script>
 </body>
 </html>
