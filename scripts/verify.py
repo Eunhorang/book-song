@@ -113,7 +113,7 @@ def main() -> None:
     if '<video id="main-player"' in html:
         errors.append("기본 플레이어가 영상 요소로 남아 있습니다.")
     stylesheet=(base/"styles.css").read_text(encoding="utf-8")
-    for marker in [".site-header", "position: sticky", '--site-header-height', '.site-header[data-condensed="true"]', ".header-playback", ".repeat-one-button", '.playlist-status[data-playback-state="playing"]', 'animation: playback-record-spin', 'animation-play-state: paused', 'animation-play-state: running', '@keyframes playback-record-spin', '@media (prefers-reduced-motion: reduce)', 'animation: none !important', '--fade-content-duration: 260ms', 'animation: fade-content-enter var(--fade-content-duration)', '@keyframes fade-content-enter', ".playback-toggle-button", '[data-action="pause"]', ':not([aria-pressed="true"])', '-webkit-text-fill-color: #fff', ".hero-title-line", '.media-stage[data-media-kind="audio"]', "#video-player", 'font-family: "Pretendard"', 'url("./fonts/PretendardVariable.woff2")', '.hero-brand-image', 'background-image: url("./assets/brand-main.jpg")', '.section-jump', '.player-detail-link', '.track-share-button', '.player-actions', '.share-status', '.library-journal-card', '.journal', '.journal-summary', '.journal-privacy-note', '.personal-library', '.personal-track-list', '.personal-track-button', '.personal-track-record-button', '.journal-reflection-form', '.journal-reflection-card', '.journal-management', '.track-list', '.track-row-shell', '.track-row', '.track-row-state', '.track-favorite-button', '.clear-personal-library-dialog', '.track-meta', '.detail-source-group', 'aspect-ratio: 16 / 9', 'color: #756a5f', '.tabs button[aria-selected="true"]']:
+    for marker in [".site-header", "position: sticky", '--site-header-height', '.site-header[data-condensed="true"]', ".header-playback", ".repeat-one-button", '.playlist-status[data-playback-state="playing"]', 'animation: playback-record-spin', 'animation-play-state: paused', 'animation-play-state: running', '@keyframes playback-record-spin', '@media (prefers-reduced-motion: reduce)', 'animation: none !important', '--fade-content-duration: 260ms', 'animation: fade-content-enter var(--fade-content-duration)', '@keyframes fade-content-enter', ".playback-toggle-button", '[data-action="pause"]', ':not([aria-pressed="true"])', '-webkit-text-fill-color: currentColor', ".hero-title-line", '.media-stage[data-media-kind="audio"]', "#video-player", 'font-family: "Pretendard"', 'url("./fonts/PretendardVariable.woff2")', '.hero-brand-image', 'background-image: url("./assets/brand-main.jpg")', '.section-jump', '.player-detail-link', '.track-share-button', '.player-actions', '.share-status', '.library-journal-card', '.journal', '.journal-summary', '.journal-privacy-note', '.personal-library', '.personal-track-list', '.personal-track-button', '.personal-track-record-button', '.journal-reflection-form', '.journal-reflection-card', '.journal-management', '.track-list', '.track-row-shell', '.track-row', '.track-row-state', '.track-favorite-button', '.clear-personal-library-dialog', '.track-meta', '.detail-source-group', 'aspect-ratio: 16 / 9', 'color: #756a5f', '.tabs button[aria-selected="true"]']:
         if marker not in stylesheet:
             errors.append(f"CSS 필수 표식 누락: {marker}")
     fade_keyframes=re.search(r"@keyframes fade-content-enter\s*\{.*?^\}",stylesheet,re.S|re.M)
@@ -168,6 +168,28 @@ def main() -> None:
     row_renderer=javascript.partition("const createTrackRow")[2].partition("const renderLibrary")[0]
     if any(marker in row_renderer for marker in ['uploadedLabel(', 'playCountLabel(', 'track.question', 'status.label']):
         errors.append("P0-3 요약 행에 업로드일·재생수·핵심 질문·음원 상태가 노출됩니다.")
+    p04_blocks = {
+        "brand": stylesheet.partition(".brand-mark {")[2].partition("\n}")[0],
+        "navigation": stylesheet.partition('.site-nav a[aria-current="page"] {')[2].partition("\n}")[0],
+        "playlist": stylesheet.partition(".playlist-button {")[2].partition("\n}")[0],
+        "status": stylesheet.partition(".playlist-status {")[2].partition("\n}")[0],
+        "playback": stylesheet.partition(".playback-toggle-button {")[2].partition("\n}")[0],
+    }
+    for name, block in p04_blocks.items():
+        if not block:
+            errors.append(f"P0-4 헤더 CSS 블록 누락: {name}")
+    if "border: 0" not in p04_blocks["brand"]:
+        errors.append("P0-4 브랜드 심벌의 장식 외곽선이 남아 있습니다.")
+    if "background: transparent" not in p04_blocks["navigation"] or "color: var(--accent-deep)" not in p04_blocks["navigation"]:
+        errors.append("P0-4 현재 메뉴가 가벼운 글자·밑줄 위계로 변경되지 않았습니다.")
+    if "background: transparent" not in p04_blocks["playlist"] or "border: 1px solid transparent" not in p04_blocks["playlist"]:
+        errors.append("P0-4 랜덤·반복 조작부의 기본 표면이 가벼워지지 않았습니다.")
+    if any(marker not in p04_blocks["status"] for marker in ["background: transparent", "border: 0", "border-left: 1px solid var(--line-strong)", "border-radius: 0"]):
+        errors.append("P0-4 현재 재생 상태가 상자 대신 구분선 표면으로 변경되지 않았습니다.")
+    if any(marker not in p04_blocks["playback"] for marker in ["color: #fff", "background: var(--accent-deep)"]):
+        errors.append("P0-4 재생 버튼이 헤더의 유일한 강한 실행 표면으로 유지되지 않았습니다.")
+    if ".site-nav a[aria-current=\"page\"]::after" not in stylesheet:
+        errors.append("P0-4 현재 메뉴 밑줄 표시가 누락되었습니다.")
     if "playAllButton" in javascript:
         errors.append("삭제 요청된 모든 노래 재생 버튼 JavaScript 참조가 남아 있습니다.")
     if 'aria-label="책이 노래가 될 때 처음 화면"' in html:
