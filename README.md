@@ -61,7 +61,7 @@
 
 - Vercel 프로젝트: `book-song-plays-api`
 - Supabase 프로젝트: `book-song-plays` (`Northeast Asia (Seoul)`)
-- SQL 마이그레이션: 초기 `20260811_create_play_counter.sql`, 10번 확장 `20260811120000_add_track_10_play_counter.sql`, 11번 확장 `20260811144000_add_track_11_play_counter.sql`, 12번 확장 `20260812002000_add_track_12_play_counter.sql`, 13번 확장 `20260812023600_add_track_13_play_counter.sql`
+- SQL 마이그레이션: 초기 `20260811_create_play_counter.sql`, 10번 확장 `20260811120000_add_track_10_play_counter.sql`, 11번 확장 `20260811144000_add_track_11_play_counter.sql`, 12번 확장 `20260812002000_add_track_12_play_counter.sql`, 13번 확장 `20260812023600_add_track_13_play_counter.sql`, 14번 확장 `20260816193700_add_track_14_play_counter.sql`
 - Vercel 함수: `services/play-counter-api/api/plays.js`
 - 필요한 Vercel 환경변수: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
 - 서비스 역할 키는 Vercel의 Sensitive 환경변수에만 보관하며 브라우저에는 어떤 Supabase 키도 넣지 않습니다. 테이블과 RPC 함수는 익명·인증 사용자에게 공개하지 않습니다.
@@ -116,7 +116,7 @@ YouTube 예시:
 번호가 붙은 공개 곡 노트를 준비한 뒤 다음 명령으로 노래 데이터를 갱신합니다.
 
 ```bash
-python3 scripts/sync_from_obsidian.py --source-dir "곡 노트 폴더" --uploaded-at 13=2026-08-12
+python3 scripts/sync_from_obsidian.py --source-dir "곡 노트 폴더" --uploaded-at 14=2026-08-16
 python3 scripts/build.py
 python3 scripts/verify.py
 ```
